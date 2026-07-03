@@ -115,6 +115,7 @@ function generatedMessage(message: RawMessage): boolean {
 export function discoverAssets(conversation: RawConversation): DiscoveredAsset[] {
     const assets = new Map<string, MutableAsset>()
     const aliasToKey = new Map<string, string>()
+    const conversationId = String(conversation.id ?? conversation.conversation_id ?? '')
 
     const getAsset = (key: string, fileId: string | null): MutableAsset => {
         const canonicalKey = aliasToKey.get(key) ?? key
@@ -239,8 +240,27 @@ export function discoverAssets(conversation: RawConversation): DiscoveredAsset[]
         SANDBOX_RE.lastIndex = 0
         for (const match of value.matchAll(SANDBOX_RE)) {
             const sandboxPath = match[0]
-            const asset = add(`sandbox:${sandboxPath}`, value, path, context, { ...hints, name: basename(sandboxPath) }, 'sandbox-file')
+            // Interpreter files are scoped to the message that created them.
+            // The same /mnt/data filename can occur in several branches, so the
+            // message ID must be part of the key as well as the download URL.
+            const asset = add(
+                `sandbox:${context.messageId}:${sandboxPath}`,
+                value,
+                path,
+                context,
+                { ...hints, name: basename(sandboxPath) },
+                'sandbox-file',
+            )
             asset.sandboxPathSet.add(sandboxPath)
+            if (conversationId && context.messageId) {
+                const params = new URLSearchParams({
+                    message_id: context.messageId,
+                    sandbox_path: sandboxPath.replace(/^sandbox:/i, ''),
+                })
+                asset.directUrlSet.add(
+                    `/backend-api/conversation/${encodeURIComponent(conversationId)}/interpreter/download?${params}`,
+                )
+            }
         }
 
         DATA_IMAGE_RE.lastIndex = 0
@@ -318,6 +338,7 @@ export function discoverAssets(conversation: RawConversation): DiscoveredAsset[]
                 target.references.push(reference)
             }
         })
+        sandboxAsset.directUrlSet.forEach(url => target.directUrlSet.add(url))
         sandboxAsset.sandboxPathSet.forEach(path => target.sandboxPathSet.add(path))
         assets.delete(key)
     }

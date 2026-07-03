@@ -242,7 +242,10 @@
         retryAfter(response)
       );
     }
-    if ((response.headers.get("content-type") ?? "").toLowerCase().includes("text/html")) {
+    const contentType = (response.headers.get("content-type") ?? "").toLowerCase();
+    const disposition = response.headers.get("content-disposition") ?? "";
+    const isInterpreterDownload = url.includes("/interpreter/download?");
+    if (contentType.includes("text/html") && !isInterpreterDownload && !/\battachment\b/i.test(disposition)) {
       throw new Error("File endpoint returned HTML instead of an attachment");
     }
     return response;
@@ -312,6 +315,7 @@
     var _a, _b;
     const assets = /* @__PURE__ */ new Map();
     const aliasToKey = /* @__PURE__ */ new Map();
+    const conversationId2 = String(conversation.id ?? conversation.conversation_id ?? "");
     const getAsset = (key, fileId) => {
       const canonicalKey = aliasToKey.get(key) ?? key;
       let asset = assets.get(canonicalKey);
@@ -420,8 +424,24 @@ ${reference.kind}`;
       SANDBOX_RE.lastIndex = 0;
       for (const match of value.matchAll(SANDBOX_RE)) {
         const sandboxPath = match[0];
-        const asset = add(`sandbox:${sandboxPath}`, value, path, context, { ...hints, name: basename$1(sandboxPath) }, "sandbox-file");
+        const asset = add(
+          `sandbox:${context.messageId}:${sandboxPath}`,
+          value,
+          path,
+          context,
+          { ...hints, name: basename$1(sandboxPath) },
+          "sandbox-file"
+        );
         asset.sandboxPathSet.add(sandboxPath);
+        if (conversationId2 && context.messageId) {
+          const params = new URLSearchParams({
+            message_id: context.messageId,
+            sandbox_path: sandboxPath.replace(/^sandbox:/i, "")
+          });
+          asset.directUrlSet.add(
+            `/backend-api/conversation/${encodeURIComponent(conversationId2)}/interpreter/download?${params}`
+          );
+        }
       }
       DATA_IMAGE_RE.lastIndex = 0;
       for (const match of value.matchAll(DATA_IMAGE_RE)) {
@@ -493,6 +513,7 @@ ${reference.kind}`;
           target.references.push(reference);
         }
       });
+      sandboxAsset.directUrlSet.forEach((url) => target.directUrlSet.add(url));
       sandboxAsset.sandboxPathSet.forEach((path) => target.sandboxPathSet.add(path));
       assets.delete(key);
     }

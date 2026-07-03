@@ -143,6 +143,30 @@ describe('discoverAssets', () => {
         expect(assets).toHaveLength(1)
         expect(assets[0].fileId).toBe(fileId)
         expect(assets[0].sandboxPaths).toEqual(['sandbox:/mnt/data/report.csv'])
+        expect(assets[0].directUrls[0]).toContain('/interpreter/download?')
+        expect(assets[0].directUrls[0]).toContain('sandbox_path=%2Fmnt%2Fdata%2Freport.csv')
+    })
+
+    it('keeps same-named interpreter outputs from different messages separate', () => {
+        const raw = conversation({
+            first: {
+                id: 'message-first',
+                content: { content_type: 'text', parts: ['[Download](sandbox:/mnt/data/result.html)'] },
+            },
+            second: {
+                id: 'message-second',
+                content: { content_type: 'text', parts: ['[Download](sandbox:/mnt/data/result.html)'] },
+            },
+        })
+        raw.id = 'conversation-id'
+
+        const assets = discoverAssets(raw)
+
+        expect(assets).toHaveLength(2)
+        expect(new Set(assets.map(asset => asset.references[0].messageId))).toEqual(
+            new Set(['first', 'second']),
+        )
+        expect(assets.every(asset => asset.directUrls[0].includes('/interpreter/download?'))).toBe(true)
     })
 
     it('does not mirror arbitrary external web images', () => {

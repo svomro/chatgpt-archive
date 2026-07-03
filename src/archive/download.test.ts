@@ -98,6 +98,30 @@ describe('downloadAsset', () => {
         expect(folder.files.has(result.localFile!)).toBe(true)
     })
 
+    it('downloads an interpreter sandbox file without a file ID', async () => {
+        const folder = new MemoryDirectory()
+        api.fetchFileResponse.mockResolvedValue(new Response(new Blob(['<html></html>'], { type: 'text/html-file' })))
+        const url = '/backend-api/conversation/conversation-id/interpreter/download?message_id=message-id&sandbox_path=%2Fmnt%2Fdata%2Fresult.html'
+
+        const result = await downloadAsset(
+            asset({
+                key: 'sandbox:message-id:sandbox:/mnt/data/result.html',
+                fileId: null,
+                directUrls: [url],
+                names: ['result.html'],
+                mimeTypes: [],
+                expectedSizes: [],
+                sandboxPaths: ['sandbox:/mnt/data/result.html'],
+            }),
+            folder as unknown as FileSystemDirectoryHandle,
+            new AbortController().signal,
+        )
+
+        expect(result.status).toBe('downloaded')
+        expect(api.fetchFileResponse).toHaveBeenCalledWith(url, expect.any(AbortSignal))
+        expect(folder.files.has(result.localFile!)).toBe(true)
+    })
+
     it('keeps an unresolved sandbox path visible in the manifest', async () => {
         const folder = new MemoryDirectory()
         const result = await downloadAsset(

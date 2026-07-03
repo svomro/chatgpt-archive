@@ -271,7 +271,12 @@ export async function fetchFileResponse(url: string, signal?: AbortSignal): Prom
             retryAfter(response),
         )
     }
-    if ((response.headers.get('content-type') ?? '').toLowerCase().includes('text/html')) {
+    const contentType = (response.headers.get('content-type') ?? '').toLowerCase()
+    const disposition = response.headers.get('content-disposition') ?? ''
+    const isInterpreterDownload = url.includes('/interpreter/download?')
+    if (contentType.includes('text/html')
+        && !isInterpreterDownload
+        && !/\battachment\b/i.test(disposition)) {
         throw new Error('File endpoint returned HTML instead of an attachment')
     }
     return response
