@@ -81,6 +81,7 @@ export interface ArchiveConversationInput {
 export interface ArchiveSummary {
     projects: number
     failedProjects: number
+    incompleteProjects: number
     conversations: number
     completeConversations: number
     failedConversations: number

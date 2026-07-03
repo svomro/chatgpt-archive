@@ -79,7 +79,28 @@ describe('downloadAsset', () => {
         expect(result.status).toBe('existing')
         expect(result.actualSize).toBe(4)
         expect(result.sha256).toHaveLength(64)
+        expect(api.resolveFileDownload).not.toHaveBeenCalled()
         expect(api.fetchFileResponse).not.toHaveBeenCalled()
+    })
+
+    it('reuses a manually recovered file even when the remote ID has expired', async () => {
+        const folder = new MemoryDirectory()
+        const name = 'old-upload_[file_00000000a95871f886ef247854b30b80].mov'
+        folder.files.set(name, new Blob(['data'], { type: 'video/quicktime' }))
+        api.resolveFileDownload.mockRejectedValue(new Error('remote file expired'))
+
+        const result = await downloadAsset(
+            asset({
+                names: ['old-upload.mov'],
+                mimeTypes: ['video/quicktime'],
+            }),
+            folder as unknown as FileSystemDirectoryHandle,
+            new AbortController().signal,
+        )
+
+        expect(result.status).toBe('existing')
+        expect(result.localFile).toBe(name)
+        expect(api.resolveFileDownload).not.toHaveBeenCalled()
     })
 
     it('downloads, hashes, and writes a missing file', async () => {

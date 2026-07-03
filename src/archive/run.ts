@@ -129,6 +129,7 @@ export async function runArchive(options: ArchiveOptions): Promise<ArchiveSummar
     const summary: ArchiveSummary = {
         projects: 0,
         failedProjects: 0,
+        incompleteProjects: 0,
         conversations: records.length,
         completeConversations: 0,
         failedConversations: 0,
@@ -167,7 +168,8 @@ export async function runArchive(options: ArchiveOptions): Promise<ArchiveSummar
             summary.existing += manifest.existing
             summary.failedAssets += manifest.failed
             summary.unresolvedAssets += manifest.unresolved
-            if (!manifest.complete) summary.failedProjects += 1
+            if (manifest.failed > 0 || manifest.unresolved > 0) summary.failedProjects += 1
+            else if (manifest.coverageWarnings.length > 0) summary.incompleteProjects += 1
         }
         catch (error) {
             if (signal.aborted) throw error
@@ -254,6 +256,7 @@ export async function runArchive(options: ArchiveOptions): Promise<ArchiveSummar
         title: '完成',
         detail: summary.failedConversations === 0
             && summary.failedProjects === 0
+            && summary.incompleteProjects === 0
             && summary.failedAssets === 0
             && summary.unresolvedAssets === 0
             ? '所有附件均已保存'

@@ -11,9 +11,26 @@ vi.hoisted(() => {
     })
 })
 
-vi.mock('vite-plugin-monkey/dist/client', () => ({ unsafeWindow: {} }))
+vi.mock('vite-plugin-monkey/dist/client', () => ({
+    unsafeWindow: {
+        __remixContext: {
+            state: {
+                loaderData: {
+                    root: {
+                        clientBootstrap: {
+                            session: {
+                                accessToken: 'test-token',
+                                user: { id: 'user-id', email: 'test@example.com' },
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+}))
 
-import { fetchFileResponse } from './api'
+import { fetchFileResponse, resolveFileDownload } from './api'
 
 describe('fetchFileResponse', () => {
     afterEach(() => {
@@ -31,6 +48,12 @@ describe('fetchFileResponse', () => {
         )
 
         expect(result).toBe(response)
+        expect(fetch).toHaveBeenCalledWith(
+            expect.stringContaining('/interpreter/download?'),
+            expect.objectContaining({
+                headers: expect.objectContaining({ Authorization: 'Bearer test-token' }),
+            }),
+        )
     })
 
     it('still rejects an HTML page returned by an ordinary file endpoint', async () => {
@@ -53,5 +76,25 @@ describe('fetchFileResponse', () => {
         vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response))
 
         expect(await fetchFileResponse('/backend-api/files/download/file-id')).toBe(response)
+    })
+
+    it('retries old uploads with the current download-intent endpoint', async () => {
+        const download = {
+            status: 'success',
+            download_url: 'https://files.oaiusercontent.com/signed',
+            file_name: 'old-upload.mov',
+            file_size_bytes: 123,
+            mime_type: 'video/quicktime',
+        }
+        const fetchMock = vi.fn()
+            .mockResolvedValueOnce(new Response('', { status: 404, statusText: 'Not Found' }))
+            .mockResolvedValueOnce(new Response(JSON.stringify(download), {
+                headers: { 'content-type': 'application/json' },
+            }))
+        vi.stubGlobal('fetch', fetchMock)
+
+        await expect(resolveFileDownload('file_older_upload')).resolves.toEqual(download)
+        expect(fetchMock).toHaveBeenCalledTimes(2)
+        expect(fetchMock.mock.calls[1][0]).toContain('/files/download/file_older_upload?download_intent=true')
     })
 })

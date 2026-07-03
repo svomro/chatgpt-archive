@@ -124,6 +124,27 @@ export async function downloadAsset(
 ): Promise<AssetManifestEntry> {
     const manifest = baseManifest(asset)
 
+    // A remote file can expire while the raw conversation still remembers its
+    // original name and size. Check a manually recovered/local copy before
+    // calling the remote resolver so resumable archives can still become whole.
+    const hintedName = assetFileName(
+        asset,
+        asset.names[0] ?? null,
+        asset.mimeTypes[0] ?? null,
+    )
+    const hintedExisting = await existingFile(folder, hintedName)
+    const hintedSize = asset.expectedSizes[0] ?? null
+    if (hintedExisting && hintedExisting.size > 0
+        && (hintedSize == null || hintedExisting.size === hintedSize)) {
+        manifest.localFile = hintedName
+        manifest.status = 'existing'
+        manifest.mimeType = hintedExisting.type || asset.mimeTypes[0] || null
+        manifest.expectedSize = hintedSize
+        manifest.actualSize = hintedExisting.size
+        manifest.sha256 = await manifestHash(hintedExisting)
+        return manifest
+    }
+
     if (!asset.fileId && !asset.inlineDataUrl && asset.directUrls.length === 0) {
         manifest.error = asset.sandboxPaths.length
             ? `Unresolved sandbox path: ${asset.sandboxPaths.join(', ')}`

@@ -7,6 +7,7 @@ function summaryText(summary: ArchiveSummary): string {
     return [
         `Project ${summary.projects}`,
         `Project失败 ${summary.failedProjects}`,
+        `Project待补 ${summary.incompleteProjects}`,
         `对话 ${summary.conversations}`,
         `完整 ${summary.completeConversations}`,
         `下载 ${summary.downloaded}`,
@@ -83,6 +84,7 @@ export function mountUi(): void {
                 'cga-has-errors',
                 summary.failedConversations > 0
                 || summary.failedProjects > 0
+                || summary.incompleteProjects > 0
                 || summary.failedAssets > 0
                 || summary.unresolvedAssets > 0,
             )

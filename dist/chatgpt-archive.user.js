@@ -231,10 +231,24 @@
   }
   async function resolveFileDownload(fileId, signal) {
     const params = new URLSearchParams({ post_id: "", inline: "false" });
-    return fetchJson(`/files/download/${encodeURIComponent(fileId)}?${params}`, signal);
+    try {
+      return await fetchJson(`/files/download/${encodeURIComponent(fileId)}?${params}`, signal);
+    } catch (error) {
+      if (!(error instanceof ApiError) || error.status !== 404) throw error;
+      return fetchJson(
+        `/files/download/${encodeURIComponent(fileId)}?download_intent=true`,
+        signal
+      );
+    }
   }
   async function fetchFileResponse(url, signal) {
-    const response = await fetch(url, { credentials: "include", signal });
+    const parsedUrl = new URL(url, origin);
+    const isBackendApi = parsedUrl.origin === origin && parsedUrl.pathname.startsWith("/backend-api/");
+    const response = await fetch(url, {
+      credentials: "include",
+      headers: isBackendApi ? await headers() : void 0,
+      signal
+    });
     if (!response.ok) {
       throw new ApiError(
         `${response.status} ${response.statusText}: file download`,
@@ -876,6 +890,22 @@ ${reference.kind}`;
   }
   async function downloadAsset(asset, folder, signal) {
     const manifest = baseManifest(asset);
+    const hintedName = assetFileName(
+      asset,
+      asset.names[0] ?? null,
+      asset.mimeTypes[0] ?? null
+    );
+    const hintedExisting = await existingFile(folder, hintedName);
+    const hintedSize = asset.expectedSizes[0] ?? null;
+    if (hintedExisting && hintedExisting.size > 0 && (hintedSize == null || hintedExisting.size === hintedSize)) {
+      manifest.localFile = hintedName;
+      manifest.status = "existing";
+      manifest.mimeType = hintedExisting.type || asset.mimeTypes[0] || null;
+      manifest.expectedSize = hintedSize;
+      manifest.actualSize = hintedExisting.size;
+      manifest.sha256 = await manifestHash(hintedExisting);
+      return manifest;
+    }
     if (!asset.fileId && !asset.inlineDataUrl && asset.directUrls.length === 0) {
       manifest.error = asset.sandboxPaths.length ? `Unresolved sandbox path: ${asset.sandboxPaths.join(", ")}` : "No resolver supported this reference";
       return manifest;
@@ -1014,6 +1044,7 @@ ${reference.kind}`;
     const summary = {
       projects: 0,
       failedProjects: 0,
+      incompleteProjects: 0,
       conversations: records.length,
       completeConversations: 0,
       failedConversations: 0,
@@ -1051,7 +1082,8 @@ ${reference.kind}`;
         summary.existing += manifest.existing;
         summary.failedAssets += manifest.failed;
         summary.unresolvedAssets += manifest.unresolved;
-        if (!manifest.complete) summary.failedProjects += 1;
+        if (manifest.failed > 0 || manifest.unresolved > 0) summary.failedProjects += 1;
+        else if (manifest.coverageWarnings.length > 0) summary.incompleteProjects += 1;
       } catch (error) {
         if (signal.aborted) throw error;
         summary.failedProjects += 1;
@@ -1127,7 +1159,7 @@ ${reference.kind}`;
       current: records.length,
       total: records.length,
       title: "完成",
-      detail: summary.failedConversations === 0 && summary.failedProjects === 0 && summary.failedAssets === 0 && summary.unresolvedAssets === 0 ? "所有附件均已保存" : "存在失败或无法解析的附件"
+      detail: summary.failedConversations === 0 && summary.failedProjects === 0 && summary.incompleteProjects === 0 && summary.failedAssets === 0 && summary.unresolvedAssets === 0 ? "所有附件均已保存" : "存在失败或无法解析的附件"
     });
     return summary;
   }
@@ -1136,6 +1168,7 @@ ${reference.kind}`;
     return [
       `Project ${summary.projects}`,
       `Project失败 ${summary.failedProjects}`,
+      `Project待补 ${summary.incompleteProjects}`,
       `对话 ${summary.conversations}`,
       `完整 ${summary.completeConversations}`,
       `下载 ${summary.downloaded}`,
@@ -1205,7 +1238,7 @@ ${reference.kind}`;
         status.textContent = summaryText(summary);
         root.classList.toggle(
           "cga-has-errors",
-          summary.failedConversations > 0 || summary.failedProjects > 0 || summary.failedAssets > 0 || summary.unresolvedAssets > 0
+          summary.failedConversations > 0 || summary.failedProjects > 0 || summary.incompleteProjects > 0 || summary.failedAssets > 0 || summary.unresolvedAssets > 0
         );
       } catch (error) {
         if ((error == null ? void 0 : error.name) === "AbortError") status.textContent = "已取消，已写入的文件保留";

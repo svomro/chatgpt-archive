@@ -259,11 +259,28 @@ export async function fetchConversation(id: string, signal?: AbortSignal): Promi
 
 export async function resolveFileDownload(fileId: string, signal?: AbortSignal): Promise<FileDownloadResponse> {
     const params = new URLSearchParams({ post_id: '', inline: 'false' })
-    return fetchJson(`/files/download/${encodeURIComponent(fileId)}?${params}`, signal)
+    try {
+        return await fetchJson(`/files/download/${encodeURIComponent(fileId)}?${params}`, signal)
+    }
+    catch (error) {
+        if (!(error instanceof ApiError) || error.status !== 404) throw error
+        // Older user uploads are no longer resolved by the exporter's legacy
+        // query. This is the endpoint the current ChatGPT attachment button uses.
+        return fetchJson(
+            `/files/download/${encodeURIComponent(fileId)}?download_intent=true`,
+            signal,
+        )
+    }
 }
 
 export async function fetchFileResponse(url: string, signal?: AbortSignal): Promise<Response> {
-    const response = await fetch(url, { credentials: 'include', signal })
+    const parsedUrl = new URL(url, origin)
+    const isBackendApi = parsedUrl.origin === origin && parsedUrl.pathname.startsWith('/backend-api/')
+    const response = await fetch(url, {
+        credentials: 'include',
+        headers: isBackendApi ? await headers() : undefined,
+        signal,
+    })
     if (!response.ok) {
         throw new ApiError(
             `${response.status} ${response.statusText}: file download`,
