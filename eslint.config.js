@@ -1,18 +1,15 @@
-import pionxzh from '@pionxzh/eslint-config'
+import js from '@eslint/js'
+import tseslint from 'typescript-eslint'
 
-export default pionxzh(
+export default tseslint.config(
+    { ignores: ['dist/**', 'coverage/**'] },
+    js.configs.recommended,
+    ...tseslint.configs.recommended,
     {
-        typescript: true,
-        react: true,
-        vue: false,
-        yaml: false,
-        ignores: ['*.md', '.release-please-manifest.json'],
-    },
-    {
+        files: ['src/**/*.ts'],
         rules: {
-            'no-alert': 'off',
-            'ts/ban-types': 'off',
-            'node/prefer-global/process': 'off',
+            '@typescript-eslint/no-explicit-any': 'off',
+            'no-console': 'off',
         },
     },
 )
