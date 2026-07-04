@@ -1,10 +1,11 @@
 import {
-    fetchAllConversationRecords,
+    fetchArchiveCatalog,
     fetchConversation,
     fetchProjects,
     getAccountProfile,
 } from '../chatgpt/api'
-import type { ConversationRecord, ProjectRecord, RawConversation } from '../chatgpt/types'
+import type { ArchiveCatalog, ConversationRecord, ProjectRecord, RawConversation } from '../chatgpt/types'
+import { selectConversationRecords } from './catalog'
 import { discoverAssets, discoverProjectAssets } from './discover'
 import { downloadAsset, mapConcurrent } from './download'
 import {
@@ -26,8 +27,10 @@ const ATTACHMENT_CONCURRENCY = 2
 
 export interface ArchiveOptions {
     root: FileSystemDirectoryHandle
-    mode: 'current' | 'all'
+    mode: 'current' | 'all' | 'selected'
     currentConversationId?: string
+    selectedConversationIds?: string[]
+    catalog?: ArchiveCatalog
     signal: AbortSignal
     onProgress?: (progress: ArchiveProgress) => void
 }
@@ -101,10 +104,16 @@ export async function runArchive(options: ArchiveOptions): Promise<ArchiveSummar
     signal.throwIfAborted()
     onProgress?.({ phase: 'listing', current: 0, total: 0, title: '读取账号', detail: '' })
 
-    const [account, projects] = await Promise.all([
+    const catalogPromise: Promise<ArchiveCatalog> = options.catalog
+        ? Promise.resolve(options.catalog)
+        : options.mode === 'current'
+            ? fetchProjects(signal).then(projects => ({ projects, records: [] }))
+            : fetchArchiveCatalog(signal)
+    const [account, catalog] = await Promise.all([
         getAccountProfile(),
-        fetchProjects(signal),
+        catalogPromise,
     ])
+    const { projects } = catalog
     const providerFolder = await directory(options.root, ['ChatGPT'])
     const accountFolder = await directory(providerFolder, [`[${safeName(account.email, 'unknown-account')}]`])
     await writeJson(accountFolder, 'account.json', {
@@ -122,8 +131,12 @@ export async function runArchive(options: ArchiveOptions): Promise<ArchiveSummar
             project: null,
         }]
     }
+    else if (options.mode === 'selected') {
+        records = selectConversationRecords(catalog.records, options.selectedConversationIds ?? [])
+        if (records.length === 0) throw new Error('请至少选择一个对话')
+    }
     else {
-        records = await fetchAllConversationRecords(projects, signal)
+        records = catalog.records
     }
 
     const summary: ArchiveSummary = {

@@ -1,7 +1,9 @@
 import { unsafeWindow } from 'vite-plugin-monkey/dist/client'
 import type {
     AccountProfile,
+    ArchiveCatalog,
     ConversationListItem,
+    ConversationPage,
     ConversationRecord,
     FileDownloadResponse,
     ProjectRecord,
@@ -177,43 +179,77 @@ export async function fetchConversationList(
     const items: ConversationListItem[] = []
     let offset = 0
     let cursor: string | number | null = 0
-    const limit = projectId ? 50 : 100
     const seenCursors = new Set<string>()
 
     while (true) {
-        let page: { items?: ConversationListItem[]; total?: number | null; cursor?: string | null }
-        if (projectId) {
-            const params = new URLSearchParams({ limit: String(limit), cursor: String(cursor ?? 0) })
-            page = await fetchJson(`/gizmos/${encodeURIComponent(projectId)}/conversations?${params}`, signal)
-        }
-        else {
-            const params = new URLSearchParams({
-                limit: String(limit),
-                offset: String(offset),
-                ...(archived ? { is_archived: 'true' } : {}),
-            })
-            page = await fetchJson(`/conversations?${params}`, signal)
-        }
+        const page = await fetchConversationPage(projectId, signal, { archived, offset, cursor })
+        items.push(...page.items)
+        if (!page.hasMore) break
 
-        const batch = page.items ?? []
-        items.push(...batch)
-        if (batch.length === 0) break
-
-        if (projectId) {
-            cursor = page.cursor ?? null
-            if (cursor == null) break
+        offset = page.nextOffset
+        cursor = page.nextCursor
+        if (projectId && cursor != null) {
             const key = String(cursor)
             if (seenCursors.has(key)) break
             seenCursors.add(key)
         }
-        else {
-            offset += limit
-            if (page.total != null && offset >= page.total) break
-            if (batch.length < limit) break
-        }
     }
 
     return items
+}
+
+export async function fetchConversationPage(
+    projectId: string | null,
+    signal?: AbortSignal,
+    options: {
+        archived?: boolean
+        offset?: number
+        cursor?: string | number | null
+        limit?: number
+    } = {},
+): Promise<ConversationPage> {
+    const limit = options.limit ?? (projectId ? 50 : 100)
+    const offset = options.offset ?? 0
+    const cursor = options.cursor ?? 0
+
+    if (projectId) {
+        const params = new URLSearchParams({ limit: String(limit), cursor: String(cursor) })
+        const page = await fetchJson<{
+            items?: ConversationListItem[]
+            cursor?: string | number | null
+        }>(`/gizmos/${encodeURIComponent(projectId)}/conversations?${params}`, signal)
+        const items = page.items ?? []
+        const nextCursor = page.cursor ?? null
+        return {
+            items,
+            total: null,
+            nextOffset: offset + items.length,
+            nextCursor,
+            hasMore: items.length > 0 && nextCursor != null,
+        }
+    }
+
+    const params = new URLSearchParams({
+        limit: String(limit),
+        offset: String(offset),
+        order: 'updated',
+        hide_snorlax: 'true',
+        ...(options.archived ? { is_archived: 'true' } : {}),
+    })
+    const page = await fetchJson<{
+        items?: ConversationListItem[]
+        total?: number | null
+    }>(`/conversations?${params}`, signal)
+    const items = page.items ?? []
+    const total = page.total ?? null
+    const nextOffset = offset + items.length
+    return {
+        items,
+        total,
+        nextOffset,
+        nextCursor: null,
+        hasMore: items.length > 0 && (total == null ? items.length >= limit : nextOffset < total),
+    }
 }
 
 export async function fetchAllConversationRecords(
@@ -243,6 +279,14 @@ export async function fetchAllConversationRecords(
         return toTimestamp(right.item.update_time ?? right.item.create_time)
             - toTimestamp(left.item.update_time ?? left.item.create_time)
     })
+}
+
+export async function fetchArchiveCatalog(signal?: AbortSignal): Promise<ArchiveCatalog> {
+    const projects = await fetchProjects(signal)
+    return {
+        projects,
+        records: await fetchAllConversationRecords(projects, signal),
+    }
 }
 
 function toTimestamp(value: number | string | undefined): number {

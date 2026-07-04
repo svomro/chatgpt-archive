@@ -14,6 +14,14 @@ export interface ConversationListItem {
     [key: string]: unknown
 }
 
+export interface ConversationPage {
+    items: ConversationListItem[]
+    total: number | null
+    nextOffset: number
+    nextCursor: string | number | null
+    hasMore: boolean
+}
+
 export interface RawConversation {
     id?: string
     conversation_id?: string
@@ -59,6 +67,11 @@ export interface ProjectRecord {
 export interface ConversationRecord {
     item: ConversationListItem
     project: ProjectRecord | null
+}
+
+export interface ArchiveCatalog {
+    projects: ProjectRecord[]
+    records: ConversationRecord[]
 }
 
 export type FileDownloadResponse = {

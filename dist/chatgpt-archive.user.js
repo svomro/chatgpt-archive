@@ -13,7 +13,7 @@
 // @run-at       document-end
 // ==/UserScript==
 
-(o=>{if(typeof GM_addStyle=="function"){GM_addStyle(o);return}const a=document.createElement("style");a.textContent=o,document.head.append(a)})(" #chatgpt-archive-root{position:fixed;right:20px;bottom:20px;z-index:2147483647;color:#1f2937;font:13px/1.45 ui-sans-serif,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif}#chatgpt-archive-root button{border:0;border-radius:9px;cursor:pointer;font:inherit}#chatgpt-archive-root button:disabled{cursor:not-allowed;opacity:.45}.cga-launch{float:right;padding:9px 14px;background:#111827;color:#fff;box-shadow:0 5px 18px #0003}.cga-panel{width:min(420px,calc(100vw - 32px));margin-bottom:10px;padding:16px;border:1px solid #d1d5db;border-radius:14px;background:#fff;box-shadow:0 15px 45px #0003}.cga-head,.cga-actions{display:flex;align-items:center;gap:8px}.cga-head{justify-content:space-between}.cga-head strong{font-size:15px}.cga-close{width:28px;height:28px;background:transparent;color:inherit;font-size:20px!important}.cga-actions{flex-wrap:wrap;margin:14px 0}.cga-actions button{padding:7px 10px;background:#e5e7eb;color:#111827}.cga-actions .cga-cancel{background:#fee2e2;color:#991b1b}.cga-status{max-height:90px;overflow:auto;word-break:break-word}.cga-progress{width:100%;margin-top:9px}.cga-has-errors .cga-status{color:#b91c1c}@media(prefers-color-scheme:dark){#chatgpt-archive-root{color:#e5e7eb}.cga-panel{border-color:#4b5563;background:#202123}.cga-actions button{background:#374151;color:#f9fafb}} ");
+(a=>{if(typeof GM_addStyle=="function"){GM_addStyle(a);return}const o=document.createElement("style");o.textContent=a,document.head.append(o)})(" #chatgpt-archive-root{position:relative;z-index:2147483647;display:flex;flex:0 0 auto;align-items:center;color:inherit;font:13px/1.45 ui-sans-serif,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif}#chatgpt-archive-root[data-docked=false]{display:none}#chatgpt-archive-root button{border:0;border-radius:9px;cursor:pointer;font:inherit}#chatgpt-archive-root button:disabled{cursor:not-allowed;opacity:.45}.cga-launch{position:relative;display:inline-flex;width:36px;height:36px;align-items:center;justify-content:center;padding:0;background:transparent;color:inherit}.cga-launch:hover,.cga-launch:focus-visible{background:var(--token-interactive-bg-secondary-hover, rgb(0 0 0 / .08));color:var(--text-primary, #0d0d0d)}.cga-launch svg{display:block}.cga-launch:after{position:absolute;bottom:calc(100% + 8px);left:50%;z-index:2147483647;padding:5px 8px;border-radius:6px;background:#171717;color:#fff;content:attr(data-tooltip);font-size:12px;line-height:1;opacity:0;pointer-events:none;transform:translate(-50%) translateY(3px);transition:opacity .12s ease,transform .12s ease;white-space:nowrap}.cga-launch:hover:after,.cga-launch:focus-visible:after{opacity:1;transform:translate(-50%) translateY(0)}.cga-panel{position:fixed;bottom:72px;left:8px;z-index:2147483647;width:min(520px,calc(100vw - 16px));max-height:calc(100vh - 88px);padding:16px;border:1px solid #d1d5db;border-radius:14px;background:#fff;color:#1f2937;box-shadow:0 15px 45px #0003}.cga-head,.cga-toolbar,.cga-selection-toolbar,.cga-actions{display:flex;align-items:center;gap:8px}.cga-head{justify-content:space-between}.cga-head strong{font-size:15px}.cga-toolbar{flex-wrap:wrap;margin-top:12px;padding:8px 0;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb}.cga-source,.cga-search{min-width:0;padding:6px 8px;border:1px solid #d1d5db;border-radius:7px;background:#fff;color:inherit;font:inherit}.cga-source{max-width:210px}.cga-source-loading{display:inline-flex;align-items:center;gap:5px;color:#6b7280;font-size:12px;white-space:nowrap}.cga-source-loading[hidden]{display:none}.cga-spinner{width:13px;height:13px;border:2px solid #d1d5db;border-top-color:#10a37f;border-radius:50%;animation:cga-spin .7s linear infinite}@keyframes cga-spin{to{transform:rotate(360deg)}}.cga-search{flex:1 1 160px}.cga-selection-toolbar{padding:8px 2px}.cga-selection-toolbar label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}.cga-selected-count{margin-left:auto;color:#6b7280}.cga-refresh{margin-left:auto;padding:5px 9px;background:#e5e7eb;color:#111827}.cga-list-header,.cga-conversation{display:grid;min-width:0;grid-template-columns:15px minmax(0,1fr) 76px 76px;align-items:center;gap:9px}.cga-list-header{padding:5px 8px;color:#6b7280;font-size:11px}.cga-list-header button{overflow:hidden;padding:2px 0;background:transparent;color:inherit;font-size:inherit;text-align:left;text-overflow:ellipsis;white-space:nowrap}.cga-list-header .cga-sort-active{color:#047857;font-weight:600}.cga-selection-list{max-height:min(52vh,520px);overflow:auto;overscroll-behavior:contain;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb}.cga-list-message{margin:18px 0;color:#6b7280;text-align:center}.cga-list-error{color:#b91c1c}.cga-conversation{padding:7px 8px;border-radius:8px;cursor:pointer}.cga-conversation:hover{background:#f3f4f6}.cga-conversation-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cga-conversation-date{overflow:hidden;color:#6b7280;font-size:10.5px;text-overflow:ellipsis;white-space:nowrap}.cga-conversation-date.cga-date-active{color:#047857}.cga-selection-toolbar input,.cga-conversation input{width:15px;height:15px;flex:0 0 auto;accent-color:#10a37f}.cga-load-more{display:block;margin:10px auto 0;padding:6px 12px;background:#e5e7eb;color:#111827}.cga-load-more[hidden]{display:none}.cga-close{width:28px;height:28px;background:transparent;color:inherit;font-size:20px!important}.cga-actions{flex-wrap:wrap;margin:12px 0}.cga-actions button{padding:7px 10px;background:#e5e7eb;color:#111827}.cga-actions .cga-export{background:#10a37f;color:#fff}.cga-actions .cga-cancel{background:#fee2e2;color:#991b1b}.cga-status{max-height:90px;overflow:auto;word-break:break-word}.cga-progress{width:100%;margin-top:9px}.cga-tone-success .cga-status{color:#15803d}.cga-tone-warning .cga-status{color:#b45309}.cga-tone-error .cga-status{color:#b91c1c}@media(prefers-color-scheme:dark){.cga-panel{border-color:#4b5563;background:#202123;color:#e5e7eb}.cga-toolbar,.cga-selection-list{border-color:#374151}.cga-source,.cga-search{border-color:#4b5563;background:#202123;color:#e5e7eb}.cga-selected-count,.cga-source-loading,.cga-list-message,.cga-conversation-date,.cga-list-header{color:#9ca3af}.cga-list-header .cga-sort-active,.cga-conversation-date.cga-date-active{color:#34d399}.cga-list-error{color:#f87171}.cga-conversation:hover{background:#2f3033}.cga-refresh,.cga-load-more,.cga-actions button{background:#374151;color:#f9fafb}.cga-actions .cga-export{background:#10a37f;color:#fff}.cga-tone-success .cga-status{color:#4ade80}.cga-tone-warning .cga-status{color:#fbbf24}.cga-tone-error .cga-status{color:#f87171}} ");
 
 (function () {
   'use strict';
@@ -166,37 +166,56 @@
     const items = [];
     let offset = 0;
     let cursor = 0;
-    const limit = projectId ? 50 : 100;
     const seenCursors = /* @__PURE__ */ new Set();
     while (true) {
-      let page;
-      if (projectId) {
-        const params = new URLSearchParams({ limit: String(limit), cursor: String(cursor ?? 0) });
-        page = await fetchJson(`/gizmos/${encodeURIComponent(projectId)}/conversations?${params}`, signal);
-      } else {
-        const params = new URLSearchParams({
-          limit: String(limit),
-          offset: String(offset),
-          ...archived ? { is_archived: "true" } : {}
-        });
-        page = await fetchJson(`/conversations?${params}`, signal);
-      }
-      const batch = page.items ?? [];
-      items.push(...batch);
-      if (batch.length === 0) break;
-      if (projectId) {
-        cursor = page.cursor ?? null;
-        if (cursor == null) break;
+      const page = await fetchConversationPage(projectId, signal, { archived, offset, cursor });
+      items.push(...page.items);
+      if (!page.hasMore) break;
+      offset = page.nextOffset;
+      cursor = page.nextCursor;
+      if (projectId && cursor != null) {
         const key = String(cursor);
         if (seenCursors.has(key)) break;
         seenCursors.add(key);
-      } else {
-        offset += limit;
-        if (page.total != null && offset >= page.total) break;
-        if (batch.length < limit) break;
       }
     }
     return items;
+  }
+  async function fetchConversationPage(projectId, signal, options = {}) {
+    const limit = options.limit ?? (projectId ? 50 : 100);
+    const offset = options.offset ?? 0;
+    const cursor = options.cursor ?? 0;
+    if (projectId) {
+      const params2 = new URLSearchParams({ limit: String(limit), cursor: String(cursor) });
+      const page2 = await fetchJson(`/gizmos/${encodeURIComponent(projectId)}/conversations?${params2}`, signal);
+      const items2 = page2.items ?? [];
+      const nextCursor = page2.cursor ?? null;
+      return {
+        items: items2,
+        total: null,
+        nextOffset: offset + items2.length,
+        nextCursor,
+        hasMore: items2.length > 0 && nextCursor != null
+      };
+    }
+    const params = new URLSearchParams({
+      limit: String(limit),
+      offset: String(offset),
+      order: "updated",
+      hide_snorlax: "true",
+      ...options.archived ? { is_archived: "true" } : {}
+    });
+    const page = await fetchJson(`/conversations?${params}`, signal);
+    const items = page.items ?? [];
+    const total = page.total ?? null;
+    const nextOffset = offset + items.length;
+    return {
+      items,
+      total,
+      nextOffset,
+      nextCursor: null,
+      hasMore: items.length > 0 && (total == null ? items.length >= limit : nextOffset < total)
+    };
   }
   async function fetchAllConversationRecords(projects, signal) {
     const byId = /* @__PURE__ */ new Map();
@@ -218,6 +237,13 @@
     return [...byId.values()].sort((left, right) => {
       return toTimestamp(right.item.update_time ?? right.item.create_time) - toTimestamp(left.item.update_time ?? left.item.create_time);
     });
+  }
+  async function fetchArchiveCatalog(signal) {
+    const projects = await fetchProjects(signal);
+    return {
+      projects,
+      records: await fetchAllConversationRecords(projects, signal)
+    };
   }
   function toTimestamp(value) {
     if (typeof value === "number") return value * 1e3;
@@ -263,6 +289,24 @@
       throw new Error("File endpoint returned HTML instead of an attachment");
     }
     return response;
+  }
+  function timeValue(value) {
+    if (typeof value === "number") return value * 1e3;
+    if (typeof value === "string") return Date.parse(value) || 0;
+    return 0;
+  }
+  function sortConversationRecords(records, field, direction) {
+    const multiplier = direction === "asc" ? 1 : -1;
+    return [...records].sort((left, right) => {
+      if (field === "title") {
+        return multiplier * left.item.title.localeCompare(right.item.title);
+      }
+      return multiplier * (timeValue(field === "update_time" ? left.item.update_time : left.item.create_time) - timeValue(field === "update_time" ? right.item.update_time : right.item.create_time));
+    });
+  }
+  function selectConversationRecords(records, selectedIds) {
+    const selected = new Set(selectedIds);
+    return records.filter((record) => selected.has(record.item.id));
   }
   const FILE_ID_RE = new RegExp("(?<![A-Za-z0-9])(?:file_[A-Za-z0-9]{16,}|file-(?!service\\b)[A-Za-z0-9]{16,})", "gi");
   const LIBRARY_ID_RE = /libfile_[A-Za-z0-9]{16,}/gi;
@@ -1033,21 +1077,16 @@ ${reference.kind}`;
       assets: entries
     };
   }
-  function currentConversationId() {
-    var _a;
-    return ((_a = location.pathname.match(/^\/(?:c|g\/[^/]+\/c)\/([A-Za-z0-9-]+)/)) == null ? void 0 : _a[1]) ?? null;
-  }
-  function getCurrentConversationId() {
-    return currentConversationId();
-  }
   async function runArchive(options) {
     const { signal, onProgress } = options;
     signal.throwIfAborted();
     onProgress == null ? void 0 : onProgress({ phase: "listing", current: 0, total: 0, title: "读取账号", detail: "" });
-    const [account, projects] = await Promise.all([
+    const catalogPromise = options.catalog ? Promise.resolve(options.catalog) : fetchArchiveCatalog(signal);
+    const [account, catalog] = await Promise.all([
       getAccountProfile(),
-      fetchProjects(signal)
+      catalogPromise
     ]);
+    const { projects } = catalog;
     const providerFolder = await directory(options.root, ["ChatGPT"]);
     const accountFolder = await directory(providerFolder, [`[${safeName(account.email, "unknown-account")}]`]);
     await writeJson(accountFolder, "account.json", {
@@ -1056,15 +1095,9 @@ ${reference.kind}`;
       projects: projects.map((project) => ({ id: project.id, name: project.name, description: project.description }))
     });
     let records;
-    if (options.mode === "current") {
-      const id = options.currentConversationId ?? currentConversationId();
-      if (!id) throw new Error("当前页面没有对话 ID");
-      records = [{
-        item: { id, title: id, create_time: 0 },
-        project: null
-      }];
-    } else {
-      records = await fetchAllConversationRecords(projects, signal);
+    {
+      records = selectConversationRecords(catalog.records, options.selectedConversationIds ?? []);
+      if (records.length === 0) throw new Error("请至少选择一个对话");
     }
     const summary = {
       projects: 0,
@@ -1119,11 +1152,6 @@ ${reference.kind}`;
         });
       }
     };
-    if (options.mode === "all") {
-      for (let projectIndex = 0; projectIndex < projects.length; projectIndex += 1) {
-        await archiveProject(projects[projectIndex], projectIndex, projects.length);
-      }
-    }
     for (let index = 0; index < records.length; index += 1) {
       signal.throwIfAborted();
       const record = records[index];
@@ -1189,6 +1217,32 @@ ${reference.kind}`;
     return summary;
   }
   const ROOT_ID = "chatgpt-archive-root";
+  const ARCHIVED_SOURCE = "archived";
+  function dockPoint() {
+    const profiles = document.querySelectorAll(
+      '[data-testid="accounts-profile-button"], [role="button"][aria-label*="个人资料"], [role="button"][aria-label*="profile" i]'
+    );
+    for (const profile of profiles) {
+      const rightAction = profile.querySelector("[data-trailing-button]") ?? profile.querySelector(
+        'button[aria-label="下载应用"], button[aria-label="Download app"]'
+      );
+      if (rightAction == null ? void 0 : rightAction.parentElement) {
+        return { container: rightAction.parentElement, rightAction };
+      }
+    }
+    return null;
+  }
+  function dockUi(root) {
+    const point = dockPoint();
+    if (!point) {
+      root.dataset.docked = "false";
+      return;
+    }
+    if (root.parentElement !== point.container || root.nextElementSibling !== point.rightAction) {
+      point.container.insertBefore(root, point.rightAction);
+    }
+    root.dataset.docked = "true";
+  }
   function summaryText(summary) {
     return [
       `Project ${summary.projects}`,
@@ -1203,42 +1257,316 @@ ${reference.kind}`;
       `失败对话 ${summary.failedConversations}`
     ].join(" · ");
   }
+  function conversationDate(value, full = false) {
+    if (value == null) return "—";
+    const date = new Date(typeof value === "number" ? value * 1e3 : value);
+    if (Number.isNaN(date.getTime())) return "—";
+    if (full) return date.toLocaleString();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
   function mountUi() {
-    if (document.getElementById(ROOT_ID)) return;
+    const existing = document.getElementById(ROOT_ID);
+    if (existing) {
+      dockUi(existing);
+      return;
+    }
     const root = document.createElement("div");
     root.id = ROOT_ID;
+    root.dataset.docked = "false";
     root.innerHTML = `
-        <button class="cga-launch" type="button">Archive</button>
+        <button class="cga-launch" type="button" aria-label="导出" data-tooltip="导出">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18" fill="currentColor" stroke="currentColor" stroke-width="0.24" stroke-linejoin="round" paint-order="stroke fill" fill-rule="evenodd" clip-rule="evenodd" width="18" height="18" aria-hidden="true">
+                <path d="M5.1 11.401c.827 0 1.498.671 1.498 1.499v1.95c0 .828-.67 1.499-1.498 1.499H3.15A1.5 1.5 0 0 1 1.65 14.85V12.9A1.5 1.5 0 0 1 3.15 11.4zm-1.95 1.197a.3.3 0 0 0-.302.302v1.95c0 .166.135.301.302.302H5.1a.3.3 0 0 0 .301-.302V12.9a.3.3 0 0 0-.301-.302z"/><path d="M7.2 1.651A2.4 2.4 0 0 1 9.598 4.05v4.351h4.352a2.4 2.4 0 0 1 2.398 2.399v3.15a2.4 2.4 0 0 1-2.398 2.399H10.8A2.4 2.4 0 0 1 8.4 13.95V9.599H4.05A2.4 2.4 0 0 1 1.65 7.2V4.05A2.4 2.4 0 0 1 4.05 1.651zM9.598 13.95c0 .664.538 1.201 1.202 1.202h3.15c.663 0 1.201-.538 1.201-1.202V10.8c0-.664-.538-1.201-1.201-1.201H9.598zM4.05 2.849c-.664 0-1.202.538-1.202 1.201V7.2c0 .663.538 1.201 1.202 1.201H8.4V4.05c0-.664-.538-1.201-1.201-1.201z"/><path d="M14.85 1.651a1.5 1.5 0 0 1 1.5 1.499V5.1a1.5 1.5 0 0 1-1.5 1.499H12.9A1.5 1.5 0 0 1 11.402 5.1V3.15c0-.828.67-1.499 1.498-1.499zM12.9 2.85a.3.3 0 0 0-.301.301V5.1c0 .167.135.302.301.302h1.95a.3.3 0 0 0 .302-.302V3.15a.3.3 0 0 0-.301-.301z"/>
+            </svg>
+        </button>
         <div class="cga-panel" hidden>
             <div class="cga-head">
                 <strong>ChatGPT Archive</strong>
                 <button class="cga-close" type="button" aria-label="关闭">×</button>
             </div>
-            <p>选择父目录后，脚本会创建 ChatGPT/[账号]/…</p>
+            <div class="cga-toolbar">
+                <select class="cga-source" aria-label="对话来源">
+                    <option value="personal">全部对话</option>
+                    <option value="archived">归档对话</option>
+                </select>
+                <span class="cga-source-loading" role="status" hidden><span class="cga-spinner" aria-hidden="true"></span>加载中</span>
+                <input class="cga-search" type="search" placeholder="搜索已加载对话" aria-label="搜索已加载对话">
+                <button class="cga-refresh" type="button">刷新</button>
+            </div>
+            <div class="cga-selection-toolbar">
+                <label><input class="cga-select-all" type="checkbox"> 全选当前列表</label>
+                <span class="cga-selected-count">已选 0</span>
+            </div>
+            <div class="cga-list-header" aria-label="对话排序">
+                <span aria-hidden="true"></span>
+                <button class="cga-sort" type="button" data-sort="title">标题 ↕</button>
+                <button class="cga-sort" type="button" data-sort="create_time">创建 ↕</button>
+                <button class="cga-sort cga-sort-active" type="button" data-sort="update_time">更新 ↓</button>
+            </div>
+            <div class="cga-selection-list"><p class="cga-list-message">打开后加载第一页对话</p></div>
+            <button class="cga-load-more" type="button" hidden>加载更多</button>
             <div class="cga-actions">
-                <button class="cga-current" type="button">保存当前对话</button>
-                <button class="cga-all" type="button">保存全部对话和 Projects</button>
+                <button class="cga-export" type="button">导出所选</button>
                 <button class="cga-cancel" type="button" hidden>取消</button>
             </div>
-            <div class="cga-status">尚未开始</div>
+            <div class="cga-status" role="status" aria-live="polite">尚未开始</div>
             <progress class="cga-progress" max="1" value="0"></progress>
         </div>
     `;
     document.body.append(root);
+    dockUi(root);
+    for (const eventName of ["click", "pointerdown", "keydown"]) {
+      root.addEventListener(eventName, (event) => {
+        event.stopPropagation();
+      });
+    }
     const launch = root.querySelector(".cga-launch");
     const panel = root.querySelector(".cga-panel");
     const close = root.querySelector(".cga-close");
-    const current = root.querySelector(".cga-current");
-    const all = root.querySelector(".cga-all");
+    const source = root.querySelector(".cga-source");
+    const sourceLoading = root.querySelector(".cga-source-loading");
+    const search = root.querySelector(".cga-search");
+    const selectAll = root.querySelector(".cga-select-all");
+    const selectedCount = root.querySelector(".cga-selected-count");
+    const sortButtons = [...root.querySelectorAll(".cga-sort")];
+    const refresh = root.querySelector(".cga-refresh");
+    const selectionList = root.querySelector(".cga-selection-list");
+    const loadMore = root.querySelector(".cga-load-more");
+    const exportSelected = root.querySelector(".cga-export");
     const cancel = root.querySelector(".cga-cancel");
     const status = root.querySelector(".cga-status");
     const progress = root.querySelector(".cga-progress");
     let controller = null;
-    const setRunning = (running) => {
-      current.disabled = running || !getCurrentConversationId();
-      all.disabled = running;
-      close.disabled = running;
-      cancel.hidden = !running;
+    let listController = null;
+    let projects = [];
+    let sourcesLoaded = false;
+    let running = false;
+    let loading = false;
+    let sortField = "update_time";
+    let sortDirection = "desc";
+    const selectedIds = /* @__PURE__ */ new Set();
+    const sourceStates = /* @__PURE__ */ new Map();
+    const recordsById = /* @__PURE__ */ new Map();
+    const setStatusTone = (tone) => {
+      root.classList.toggle("cga-tone-success", tone === "success");
+      root.classList.toggle("cga-tone-warning", tone === "warning");
+      root.classList.toggle("cga-tone-error", tone === "error");
+    };
+    const projectForSource = (key) => {
+      if (!key.startsWith("project:")) return null;
+      const id = key.slice("project:".length);
+      return projects.find((project) => project.id === id) ?? null;
+    };
+    const emptySourceState = () => ({
+      records: [],
+      nextOffset: 0,
+      nextCursor: 0,
+      total: null,
+      hasMore: false,
+      loaded: false
+    });
+    const currentSourceState = () => sourceStates.get(source.value) ?? null;
+    const updateSortButtons = () => {
+      const labels = {
+        title: "标题",
+        create_time: "创建",
+        update_time: "更新"
+      };
+      for (const button of sortButtons) {
+        const field = button.dataset.sort;
+        const active = field === sortField;
+        button.classList.toggle("cga-sort-active", active);
+        button.textContent = `${labels[field]} ${active ? sortDirection === "asc" ? "↑" : "↓" : "↕"}`;
+        button.setAttribute("aria-pressed", String(active));
+        button.disabled = running || loading;
+      }
+    };
+    const updateSelectionState = () => {
+      const conversationChecks = [...selectionList.querySelectorAll(".cga-conversation-check")];
+      const currentSelected = conversationChecks.filter((input) => selectedIds.has(input.value)).length;
+      selectedCount.textContent = `已选 ${selectedIds.size} · 当前 ${currentSelected} / ${conversationChecks.length}`;
+      selectAll.checked = conversationChecks.length > 0 && currentSelected === conversationChecks.length;
+      selectAll.indeterminate = currentSelected > 0 && currentSelected < conversationChecks.length;
+      selectAll.disabled = running || loading || conversationChecks.length === 0;
+      source.disabled = running || loading;
+      sourceLoading.hidden = !loading;
+      search.disabled = running;
+      refresh.disabled = running || loading;
+      loadMore.disabled = running || loading;
+      for (const input of conversationChecks) input.disabled = running || loading;
+      exportSelected.disabled = running || selectedIds.size === 0;
+      updateSortButtons();
+    };
+    const setRunning = (value) => {
+      running = value;
+      close.disabled = value;
+      cancel.hidden = !value;
+      updateSelectionState();
+    };
+    const setListMessage = (message, error = false) => {
+      const paragraph = document.createElement("p");
+      paragraph.className = `cga-list-message${error ? " cga-list-error" : ""}`;
+      paragraph.textContent = message;
+      selectionList.replaceChildren(paragraph);
+    };
+    const renderSource = (preserveScroll = false) => {
+      const previousScrollTop = preserveScroll ? selectionList.scrollTop : 0;
+      const restoreScroll = () => {
+        if (preserveScroll) selectionList.scrollTop = previousScrollTop;
+      };
+      const state = currentSourceState();
+      const query = search.value.trim().toLocaleLowerCase();
+      const records = sortConversationRecords(
+        ((state == null ? void 0 : state.records) ?? []).filter((record) => !query || record.item.title.toLocaleLowerCase().includes(query)),
+        sortField,
+        sortDirection
+      );
+      const remaining = (state == null ? void 0 : state.total) == null ? null : Math.max(state.total - state.nextOffset, 0);
+      loadMore.hidden = !(state == null ? void 0 : state.hasMore);
+      loadMore.textContent = loading ? "正在加载…" : remaining == null ? "加载更多" : `加载更多 · 剩余 ${remaining}`;
+      selectionList.replaceChildren();
+      if (loading && !(state == null ? void 0 : state.records.length)) {
+        setListMessage("正在加载第一页对话…");
+        updateSelectionState();
+        restoreScroll();
+        return;
+      }
+      if (!records.length) {
+        setListMessage(query ? "已加载的对话中没有匹配项" : "这个来源没有对话");
+        updateSelectionState();
+        restoreScroll();
+        return;
+      }
+      for (const record of records) {
+        const row = document.createElement("label");
+        row.className = "cga-conversation";
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.className = "cga-conversation-check";
+        checkbox.value = record.item.id;
+        checkbox.checked = selectedIds.has(record.item.id);
+        const title = document.createElement("span");
+        title.className = "cga-conversation-title";
+        title.textContent = record.item.title || "未命名对话";
+        title.title = title.textContent;
+        const created = document.createElement("time");
+        created.className = `cga-conversation-date${sortField === "create_time" ? " cga-date-active" : ""}`;
+        created.textContent = conversationDate(record.item.create_time);
+        created.title = `创建：${conversationDate(record.item.create_time, true)}`;
+        const updated = document.createElement("time");
+        updated.className = `cga-conversation-date${sortField === "update_time" ? " cga-date-active" : ""}`;
+        updated.textContent = conversationDate(record.item.update_time);
+        updated.title = `更新：${conversationDate(record.item.update_time, true)}`;
+        row.append(checkbox, title, created, updated);
+        selectionList.append(row);
+        checkbox.addEventListener("change", () => {
+          if (checkbox.checked) selectedIds.add(checkbox.value);
+          else selectedIds.delete(checkbox.value);
+          updateSelectionState();
+        });
+      }
+      updateSelectionState();
+      restoreScroll();
+    };
+    const loadPage = async (reset) => {
+      listController == null ? void 0 : listController.abort();
+      const request = new AbortController();
+      listController = request;
+      const sourceKey = source.value;
+      const project = projectForSource(sourceKey);
+      const state = reset ? emptySourceState() : sourceStates.get(sourceKey) ?? emptySourceState();
+      if (reset) sourceStates.set(sourceKey, state);
+      loading = true;
+      setStatusTone("neutral");
+      status.textContent = reset ? "正在读取第一页对话…" : "正在加载更多对话…";
+      if (reset) renderSource();
+      else {
+        loadMore.textContent = "正在加载…";
+        updateSelectionState();
+      }
+      try {
+        const page = await fetchConversationPage((project == null ? void 0 : project.id) ?? null, request.signal, {
+          archived: sourceKey === ARCHIVED_SOURCE,
+          offset: state.nextOffset,
+          cursor: state.nextCursor
+        });
+        if (request.signal.aborted) return;
+        const byId = new Map(state.records.map((record) => [record.item.id, record]));
+        const visibleItems = page.items;
+        for (const item of visibleItems) {
+          const record = { item, project };
+          byId.set(item.id, record);
+          recordsById.set(item.id, record);
+        }
+        state.records = [...byId.values()];
+        state.nextOffset = page.nextOffset;
+        state.nextCursor = page.nextCursor;
+        state.total = page.total;
+        state.hasMore = page.hasMore;
+        state.loaded = true;
+        status.textContent = sourceKey === "personal" && page.total != null ? `全部对话 ${state.records.length} 个 · 已扫描 ${state.nextOffset} / ${page.total}` : page.total == null ? `已加载 ${state.records.length} 个对话` : `已加载 ${state.records.length} / ${page.total} 个对话`;
+      } catch (error) {
+        if (request.signal.aborted) return;
+        status.textContent = "对话列表加载失败";
+        setStatusTone("error");
+        if (!state.records.length) {
+          setListMessage(`加载失败：${error instanceof Error ? error.message : String(error)}`, true);
+        }
+      } finally {
+        if (listController === request) {
+          listController = null;
+          loading = false;
+          renderSource(!reset);
+        }
+      }
+    };
+    const renderProjectOptions = () => {
+      for (const option of [...source.querySelectorAll("option[data-project]")]) option.remove();
+      for (const project of projects) {
+        const option = document.createElement("option");
+        option.value = `project:${project.id}`;
+        option.dataset.project = "true";
+        option.textContent = `Project · ${project.name}`;
+        source.append(option);
+      }
+    };
+    const initializeSources = async () => {
+      if (sourcesLoaded) {
+        const state = currentSourceState();
+        if (state == null ? void 0 : state.loaded) renderSource();
+        else await loadPage(true);
+        return;
+      }
+      listController == null ? void 0 : listController.abort();
+      const request = new AbortController();
+      listController = request;
+      loading = true;
+      setStatusTone("neutral");
+      setListMessage("正在加载 Project 列表…");
+      status.textContent = "正在读取 Project…";
+      updateSelectionState();
+      try {
+        projects = await fetchProjects(request.signal);
+        if (request.signal.aborted) return;
+        sourcesLoaded = true;
+        renderProjectOptions();
+      } catch (error) {
+        if (request.signal.aborted) return;
+        setListMessage(`加载失败：${error instanceof Error ? error.message : String(error)}`, true);
+        status.textContent = "Project 列表加载失败";
+        setStatusTone("error");
+        return;
+      } finally {
+        if (listController === request) {
+          listController = null;
+          loading = false;
+          updateSelectionState();
+        }
+      }
+      await loadPage(true);
     };
     const update = (value) => {
       const total = Math.max(value.total, 1);
@@ -1246,46 +1574,92 @@ ${reference.kind}`;
       progress.value = value.current;
       status.textContent = `${value.title}${value.detail ? ` — ${value.detail}` : ""}${value.total ? ` (${value.current}/${value.total})` : ""}`;
     };
-    const start = async (mode) => {
+    const start = async () => {
+      if (selectedIds.size === 0) return;
+      const records = [...selectedIds].map((id) => recordsById.get(id)).filter((record) => record != null);
+      if (records.length !== selectedIds.size) {
+        status.textContent = "部分勾选项已失效，请刷新列表后重选";
+        setStatusTone("error");
+        return;
+      }
+      const catalog = { projects, records };
       try {
         const folder = await window.showDirectoryPicker({ id: "chatgpt-archive", mode: "readwrite" });
         controller = new AbortController();
         setRunning(true);
+        setStatusTone("neutral");
         progress.value = 0;
         status.textContent = "开始读取…";
         const summary = await runArchive({
           root: folder,
-          mode,
-          currentConversationId: getCurrentConversationId() ?? void 0,
+          mode: "selected",
+          selectedConversationIds: [...selectedIds],
+          catalog,
           signal: controller.signal,
           onProgress: update
         });
         status.textContent = summaryText(summary);
-        root.classList.toggle(
-          "cga-has-errors",
-          summary.failedConversations > 0 || summary.failedProjects > 0 || summary.incompleteProjects > 0 || summary.failedAssets > 0 || summary.unresolvedAssets > 0
-        );
+        const hasErrors = summary.failedConversations > 0 || summary.failedProjects > 0 || summary.failedAssets > 0 || summary.unresolvedAssets > 0;
+        setStatusTone(hasErrors ? "error" : summary.incompleteProjects > 0 ? "warning" : "success");
       } catch (error) {
-        if ((error == null ? void 0 : error.name) === "AbortError") status.textContent = "已取消，已写入的文件保留";
-        else status.textContent = `失败：${error instanceof Error ? error.message : String(error)}`;
-        root.classList.add("cga-has-errors");
+        if ((error == null ? void 0 : error.name) === "AbortError") {
+          status.textContent = "已取消，已写入的文件保留";
+          setStatusTone("warning");
+        } else {
+          status.textContent = `失败：${error instanceof Error ? error.message : String(error)}`;
+          setStatusTone("error");
+        }
       } finally {
         controller = null;
         setRunning(false);
       }
     };
     launch.addEventListener("click", () => {
-      panel.hidden = !panel.hidden;
-      current.disabled = !getCurrentConversationId();
+      const opening = panel.hidden;
+      panel.hidden = !opening;
+      if (opening) void initializeSources();
     });
     close.addEventListener("click", () => {
       panel.hidden = true;
     });
-    current.addEventListener("click", () => {
-      void start("current");
+    for (const button of sortButtons) {
+      button.addEventListener("click", () => {
+        const field = button.dataset.sort;
+        if (field === sortField) {
+          sortDirection = sortDirection === "asc" ? "desc" : "asc";
+        } else {
+          sortField = field;
+          sortDirection = field === "title" ? "asc" : "desc";
+        }
+        renderSource();
+      });
+    }
+    source.addEventListener("change", () => {
+      search.value = "";
+      const state = currentSourceState();
+      if (state == null ? void 0 : state.loaded) renderSource();
+      else void loadPage(true);
     });
-    all.addEventListener("click", () => {
-      void start("all");
+    search.addEventListener("input", () => {
+      renderSource();
+    });
+    refresh.addEventListener("click", () => {
+      if (sourcesLoaded) void loadPage(true);
+      else void initializeSources();
+    });
+    loadMore.addEventListener("click", () => {
+      void loadPage(false);
+    });
+    selectAll.addEventListener("change", () => {
+      for (const input of selectionList.querySelectorAll(".cga-conversation-check")) {
+        input.checked = selectAll.checked;
+        if (selectAll.checked) selectedIds.add(input.value);
+        else selectedIds.delete(input.value);
+      }
+      updateSelectionState();
+    });
+    exportSelected.addEventListener("click", () => {
+      void start();
     });
     cancel.addEventListener("click", () => controller == null ? void 0 : controller.abort());
     setRunning(false);

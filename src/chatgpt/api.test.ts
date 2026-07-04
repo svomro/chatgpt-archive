@@ -30,7 +30,43 @@ vi.mock('vite-plugin-monkey/dist/client', () => ({
     },
 }))
 
-import { fetchFileResponse, resolveFileDownload } from './api'
+import { fetchConversationPage, fetchFileResponse, resolveFileDownload } from './api'
+
+describe('fetchConversationPage', () => {
+    afterEach(() => {
+        vi.unstubAllGlobals()
+    })
+
+    it('loads one personal page and reports the remaining pages', async () => {
+        const items = Array.from({ length: 100 }, (_, index) => ({
+            id: `conversation-${index}`,
+            title: `Conversation ${index}`,
+            create_time: index,
+        }))
+        const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ items, total: 250 })))
+        vi.stubGlobal('fetch', fetchMock)
+
+        const page = await fetchConversationPage(null)
+
+        expect(page).toMatchObject({ nextOffset: 100, total: 250, hasMore: true })
+        expect(fetchMock.mock.calls[0][0]).toContain('/conversations?limit=100&offset=0&order=updated&hide_snorlax=true')
+    })
+
+    it('continues a Project list with its API cursor', async () => {
+        const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+            items: [{ id: 'project-chat', title: 'Project chat', create_time: 0 }],
+            cursor: 'next-page-token',
+        })))
+        vi.stubGlobal('fetch', fetchMock)
+
+        const page = await fetchConversationPage('project-id', undefined, { cursor: 'current-token' })
+
+        expect(page).toMatchObject({ nextOffset: 1, nextCursor: 'next-page-token', hasMore: true })
+        expect(fetchMock.mock.calls[0][0]).toContain(
+            '/gizmos/project-id/conversations?limit=50&cursor=current-token',
+        )
+    })
+})
 
 describe('fetchFileResponse', () => {
     afterEach(() => {
