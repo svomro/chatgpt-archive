@@ -273,7 +273,11 @@ export async function resolveFileDownload(fileId: string, signal?: AbortSignal):
     }
 }
 
-export async function fetchFileResponse(url: string, signal?: AbortSignal): Promise<Response> {
+export async function fetchFileResponse(
+    url: string,
+    signal?: AbortSignal,
+    allowHtml = false,
+): Promise<Response> {
     const parsedUrl = new URL(url, origin)
     const isBackendApi = parsedUrl.origin === origin && parsedUrl.pathname.startsWith('/backend-api/')
     const response = await fetch(url, {
@@ -292,6 +296,7 @@ export async function fetchFileResponse(url: string, signal?: AbortSignal): Prom
     const disposition = response.headers.get('content-disposition') ?? ''
     const isInterpreterDownload = url.includes('/interpreter/download?')
     if (contentType.includes('text/html')
+        && !allowHtml
         && !isInterpreterDownload
         && !/\battachment\b/i.test(disposition)) {
         throw new Error('File endpoint returned HTML instead of an attachment')

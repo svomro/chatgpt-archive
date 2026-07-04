@@ -87,7 +87,29 @@ async function writeResolvedAsset(
     let lastError: unknown
     for (const url of resolved.urls) {
         try {
-            return await writeResponse(folder, name, await fetchFileResponse(url, signal))
+            let response = await fetchFileResponse(url, signal)
+            const contentType = (response.headers.get('content-type') ?? '').toLowerCase()
+            if (contentType.includes('json') || url.includes('/interpreter/download?')) {
+                const descriptor = await response.clone().json().catch(() => null) as {
+                    status?: string
+                    download_url?: string
+                    error_code?: string
+                    error_message?: string | null
+                } | null
+                if (descriptor?.status === 'success' && descriptor.download_url) {
+                    // The authenticated descriptor is trusted to point at the
+                    // requested artifact; HTML is a valid Interpreter output.
+                    response = await fetchFileResponse(descriptor.download_url, signal, true)
+                }
+                else if (contentType.includes('json')) {
+                    throw new Error(
+                        descriptor?.error_message
+                            || descriptor?.error_code
+                            || 'Download endpoint returned JSON instead of file bytes',
+                    )
+                }
+            }
+            return await writeResponse(folder, name, response)
         }
         catch (error) {
             lastError = error
@@ -98,6 +120,22 @@ async function writeResolvedAsset(
 
 async function manifestHash(file: Blob): Promise<string | null> {
     return file.size <= MAX_HASH_BYTES ? sha256(file) : null
+}
+
+async function isUsableExistingFile(file: File, expectedSize: number | null): Promise<boolean> {
+    if (file.size <= 0) return false
+    if (expectedSize != null && file.size !== expectedSize) return false
+    if (!file.name.toLowerCase().endsWith('.html') || file.size > 16 * 1024) return true
+
+    const text = (await file.text()).trimStart()
+    if (!text.startsWith('{')) return true
+    try {
+        const payload = JSON.parse(text) as { status?: string; download_url?: string }
+        return !(payload.status === 'success' && typeof payload.download_url === 'string')
+    }
+    catch {
+        return true
+    }
 }
 
 function baseManifest(asset: DiscoveredAsset): AssetManifestEntry {
@@ -134,8 +172,7 @@ export async function downloadAsset(
     )
     const hintedExisting = await existingFile(folder, hintedName)
     const hintedSize = asset.expectedSizes[0] ?? null
-    if (hintedExisting && hintedExisting.size > 0
-        && (hintedSize == null || hintedExisting.size === hintedSize)) {
+    if (hintedExisting && await isUsableExistingFile(hintedExisting, hintedSize)) {
         manifest.localFile = hintedName
         manifest.status = 'existing'
         manifest.mimeType = hintedExisting.type || asset.mimeTypes[0] || null
@@ -160,8 +197,7 @@ export async function downloadAsset(
             const resolved = await resolveAsset(asset, signal)
             const name = assetFileName(asset, resolved.name, resolved.mimeType)
             const existing = await existingFile(folder, name)
-            if (existing && existing.size > 0
-                && (resolved.expectedSize == null || existing.size === resolved.expectedSize)) {
+            if (existing && await isUsableExistingFile(existing, resolved.expectedSize)) {
                 manifest.localFile = name
                 manifest.status = 'existing'
                 manifest.mimeType = existing.type || resolved.mimeType

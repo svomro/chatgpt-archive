@@ -241,7 +241,7 @@
       );
     }
   }
-  async function fetchFileResponse(url, signal) {
+  async function fetchFileResponse(url, signal, allowHtml = false) {
     const parsedUrl = new URL(url, origin);
     const isBackendApi = parsedUrl.origin === origin && parsedUrl.pathname.startsWith("/backend-api/");
     const response = await fetch(url, {
@@ -259,7 +259,7 @@
     const contentType = (response.headers.get("content-type") ?? "").toLowerCase();
     const disposition = response.headers.get("content-disposition") ?? "";
     const isInterpreterDownload = url.includes("/interpreter/download?");
-    if (contentType.includes("text/html") && !isInterpreterDownload && !/\battachment\b/i.test(disposition)) {
+    if (contentType.includes("text/html") && !allowHtml && !isInterpreterDownload && !/\battachment\b/i.test(disposition)) {
       throw new Error("File endpoint returned HTML instead of an attachment");
     }
     return response;
@@ -862,7 +862,19 @@ ${reference.kind}`;
     let lastError;
     for (const url of resolved.urls) {
       try {
-        return await writeResponse(folder, name, await fetchFileResponse(url, signal));
+        let response = await fetchFileResponse(url, signal);
+        const contentType = (response.headers.get("content-type") ?? "").toLowerCase();
+        if (contentType.includes("json") || url.includes("/interpreter/download?")) {
+          const descriptor = await response.clone().json().catch(() => null);
+          if ((descriptor == null ? void 0 : descriptor.status) === "success" && descriptor.download_url) {
+            response = await fetchFileResponse(descriptor.download_url, signal, true);
+          } else if (contentType.includes("json")) {
+            throw new Error(
+              (descriptor == null ? void 0 : descriptor.error_message) || (descriptor == null ? void 0 : descriptor.error_code) || "Download endpoint returned JSON instead of file bytes"
+            );
+          }
+        }
+        return await writeResponse(folder, name, response);
       } catch (error) {
         lastError = error;
       }
@@ -871,6 +883,19 @@ ${reference.kind}`;
   }
   async function manifestHash(file) {
     return file.size <= MAX_HASH_BYTES ? sha256(file) : null;
+  }
+  async function isUsableExistingFile(file, expectedSize) {
+    if (file.size <= 0) return false;
+    if (expectedSize != null && file.size !== expectedSize) return false;
+    if (!file.name.toLowerCase().endsWith(".html") || file.size > 16 * 1024) return true;
+    const text = (await file.text()).trimStart();
+    if (!text.startsWith("{")) return true;
+    try {
+      const payload = JSON.parse(text);
+      return !(payload.status === "success" && typeof payload.download_url === "string");
+    } catch {
+      return true;
+    }
   }
   function baseManifest(asset) {
     return {
@@ -897,7 +922,7 @@ ${reference.kind}`;
     );
     const hintedExisting = await existingFile(folder, hintedName);
     const hintedSize = asset.expectedSizes[0] ?? null;
-    if (hintedExisting && hintedExisting.size > 0 && (hintedSize == null || hintedExisting.size === hintedSize)) {
+    if (hintedExisting && await isUsableExistingFile(hintedExisting, hintedSize)) {
       manifest.localFile = hintedName;
       manifest.status = "existing";
       manifest.mimeType = hintedExisting.type || asset.mimeTypes[0] || null;
@@ -918,7 +943,7 @@ ${reference.kind}`;
         const resolved = await resolveAsset(asset, signal);
         const name = assetFileName(asset, resolved.name, resolved.mimeType);
         const existing = await existingFile(folder, name);
-        if (existing && existing.size > 0 && (resolved.expectedSize == null || existing.size === resolved.expectedSize)) {
+        if (existing && await isUsableExistingFile(existing, resolved.expectedSize)) {
           manifest.localFile = name;
           manifest.status = "existing";
           manifest.mimeType = existing.type || resolved.mimeType;
