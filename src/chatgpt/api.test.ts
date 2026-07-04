@@ -78,6 +78,19 @@ describe('fetchFileResponse', () => {
         expect(await fetchFileResponse('/backend-api/files/download/file-id')).toBe(response)
     })
 
+    it('accepts HTML reached through an authenticated download descriptor', async () => {
+        const response = new Response('<html>artifact</html>', {
+            headers: { 'content-type': 'text/html' },
+        })
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response))
+
+        expect(await fetchFileResponse(
+            '/backend-api/estuary/content?id=generated-file',
+            undefined,
+            true,
+        )).toBe(response)
+    })
+
     it('retries old uploads with the current download-intent endpoint', async () => {
         const download = {
             status: 'success',

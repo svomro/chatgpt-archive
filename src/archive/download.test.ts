@@ -121,7 +121,12 @@ describe('downloadAsset', () => {
 
     it('downloads an interpreter sandbox file without a file ID', async () => {
         const folder = new MemoryDirectory()
-        api.fetchFileResponse.mockResolvedValue(new Response(new Blob(['<html></html>'], { type: 'text/html-file' })))
+        api.fetchFileResponse
+            .mockResolvedValueOnce(new Response(JSON.stringify({
+                status: 'success',
+                download_url: 'https://chatgpt.com/backend-api/estuary/content?id=generated-file',
+            }), { headers: { 'content-type': 'application/json' } }))
+            .mockResolvedValueOnce(new Response(new Blob(['<html>real artifact</html>'], { type: 'text/html' })))
         const url = '/backend-api/conversation/conversation-id/interpreter/download?message_id=message-id&sandbox_path=%2Fmnt%2Fdata%2Fresult.html'
 
         const result = await downloadAsset(
@@ -140,7 +145,47 @@ describe('downloadAsset', () => {
 
         expect(result.status).toBe('downloaded')
         expect(api.fetchFileResponse).toHaveBeenCalledWith(url, expect.any(AbortSignal))
+        expect(api.fetchFileResponse).toHaveBeenCalledWith(
+            'https://chatgpt.com/backend-api/estuary/content?id=generated-file',
+            expect.any(AbortSignal),
+            true,
+        )
         expect(folder.files.has(result.localFile!)).toBe(true)
+        expect(await folder.files.get(result.localFile!)?.text()).toBe('<html>real artifact</html>')
+    })
+
+    it('replaces a cached download descriptor masquerading as HTML', async () => {
+        const folder = new MemoryDirectory()
+        const name = 'result_[message-id_sandbox__mnt_data_result.html].html'
+        folder.files.set(name, new Blob([JSON.stringify({
+            status: 'success',
+            download_url: 'https://chatgpt.com/backend-api/estuary/content?id=stale',
+        })], { type: 'application/json' }))
+        api.fetchFileResponse
+            .mockResolvedValueOnce(new Response(JSON.stringify({
+                status: 'success',
+                download_url: 'https://chatgpt.com/backend-api/estuary/content?id=fresh',
+            }), { headers: { 'content-type': 'application/json' } }))
+            .mockResolvedValueOnce(new Response('<html>fresh artifact</html>', {
+                headers: { 'content-type': 'text/html' },
+            }))
+
+        const result = await downloadAsset(
+            asset({
+                key: 'sandbox:message-id:sandbox:/mnt/data/result.html',
+                fileId: null,
+                directUrls: ['/backend-api/conversation/id/interpreter/download?message_id=message-id'],
+                names: ['result.html'],
+                mimeTypes: [],
+                expectedSizes: [],
+                sandboxPaths: ['sandbox:/mnt/data/result.html'],
+            }),
+            folder as unknown as FileSystemDirectoryHandle,
+            new AbortController().signal,
+        )
+
+        expect(result.status).toBe('downloaded')
+        expect(await folder.files.get(name)?.text()).toBe('<html>fresh artifact</html>')
     })
 
     it('keeps an unresolved sandbox path visible in the manifest', async () => {
