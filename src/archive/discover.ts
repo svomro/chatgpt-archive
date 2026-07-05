@@ -46,6 +46,7 @@ function hintsFromObject(value: Record<string, unknown>, inherited: Hints): Hint
         ?? strings(value.filename)[0]
         ?? inherited.name
     const mimeType = strings(value.mime_type)[0]
+        ?? strings(value.mimeType)[0]
         ?? strings(value.mimetype)[0]
         ?? strings(value.media_type)[0]
         ?? inherited.mimeType
@@ -132,6 +133,8 @@ export function discoverAssets(conversation: RawConversation): DiscoveredAsset[]
                 mimeTypes: [],
                 expectedSizes: [],
                 references: [],
+                referenceOnly: false,
+                referenceOnlyReason: null,
                 aliasSet: new Set(),
                 directUrlSet: new Set(),
                 sandboxPathSet: new Set(),
@@ -343,18 +346,30 @@ export function discoverAssets(conversation: RawConversation): DiscoveredAsset[]
         assets.delete(key)
     }
 
-    return [...assets.values()].map((asset) => ({
-        key: asset.key,
-        fileId: asset.fileId,
-        aliases: [...asset.aliasSet],
-        directUrls: [...asset.directUrlSet],
-        inlineDataUrl: asset.inlineDataUrl,
-        sandboxPaths: [...asset.sandboxPathSet],
-        names: [...asset.nameSet],
-        mimeTypes: [...asset.mimeTypeSet],
-        expectedSizes: [...asset.expectedSizeSet],
-        references: asset.references,
-    }))
+    return [...assets.values()].map((asset) => {
+        const hasUserUpload = asset.references.some(reference => reference.kind === 'user-upload')
+        const hasIndependentBytes = asset.directUrlSet.size > 0
+            || asset.sandboxPathSet.size > 0
+            || asset.inlineDataUrl != null
+        const referenceOnly = !hasUserUpload && !hasIndependentBytes
+        const referenceOnlyReason = referenceOnly
+            ? 'No user upload record and no direct URL, sandbox file, or inline data'
+            : null
+        return {
+            key: asset.key,
+            fileId: asset.fileId,
+            aliases: [...asset.aliasSet],
+            directUrls: [...asset.directUrlSet],
+            inlineDataUrl: asset.inlineDataUrl,
+            sandboxPaths: [...asset.sandboxPathSet],
+            names: [...asset.nameSet],
+            mimeTypes: [...asset.mimeTypeSet],
+            expectedSizes: [...asset.expectedSizeSet],
+            references: asset.references,
+            referenceOnly,
+            referenceOnlyReason,
+        }
+    })
 }
 
 export function discoverProjectAssets(project: ProjectRecord): DiscoveredAsset[] {

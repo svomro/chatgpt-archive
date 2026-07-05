@@ -1,7 +1,13 @@
 import { ApiError, fetchFileResponse, resolveFileDownload } from '../chatgpt/api'
 import { assetFileName } from './naming'
 import type { AssetManifestEntry, DiscoveredAsset } from './types'
-import { existingFile, sha256, writeBlob, writeResponse } from './writer'
+import {
+    existingFile,
+    existingFileByMarkers,
+    sha256,
+    writeBlob,
+    writeResponse,
+} from './writer'
 
 const MAX_ATTEMPTS = 5
 const MAX_HASH_BYTES = 64 * 1024 * 1024
@@ -151,6 +157,7 @@ function baseManifest(asset: DiscoveredAsset): AssetManifestEntry {
         sha256: null,
         attempts: 0,
         error: null,
+        reason: asset.referenceOnlyReason,
         references: asset.references,
     }
 }
@@ -162,23 +169,29 @@ export async function downloadAsset(
 ): Promise<AssetManifestEntry> {
     const manifest = baseManifest(asset)
 
-    // A remote file can expire while the raw conversation still remembers its
-    // original name and size. Check a manually recovered/local copy before
-    // calling the remote resolver so resumable archives can still become whole.
+    // Attachment IDs identify saved snapshots. Check a local copy carrying the
+    // same stable ID before applying reference-only or calling the remote resolver.
+    // This preserves resumability when the remote download route has expired.
     const hintedName = assetFileName(
         asset,
         asset.names[0] ?? null,
         asset.mimeTypes[0] ?? null,
     )
     const hintedExisting = await existingFile(folder, hintedName)
+        ?? await existingFileByMarkers(folder, asset.aliases)
     const hintedSize = asset.expectedSizes[0] ?? null
     if (hintedExisting && await isUsableExistingFile(hintedExisting, hintedSize)) {
-        manifest.localFile = hintedName
+        manifest.localFile = hintedExisting.name
         manifest.status = 'existing'
         manifest.mimeType = hintedExisting.type || asset.mimeTypes[0] || null
         manifest.expectedSize = hintedSize
         manifest.actualSize = hintedExisting.size
         manifest.sha256 = await manifestHash(hintedExisting)
+        return manifest
+    }
+
+    if (asset.referenceOnly) {
+        manifest.status = 'reference-only'
         return manifest
     }
 

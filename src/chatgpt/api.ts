@@ -55,7 +55,7 @@ async function activeAccountId(accessToken: string): Promise<string | null> {
                 'X-Authorization': `Bearer ${accessToken}`,
             },
         })
-        if (!response.ok) return null
+        if (!response.ok) throw new ApiError(`Account scope request failed: ${response.status}`, response.status)
         const payload = await response.json()
         return payload?.accounts?.[workspace]?.account?.account_id ?? null
     })()
@@ -156,14 +156,15 @@ export async function fetchProjects(signal?: AbortSignal): Promise<ProjectRecord
             `/gizmos/snorlax/sidebar?${params}`,
             signal,
         )
-        for (const item of page.items ?? []) {
+        for (const [index, item] of (page.items ?? []).entries()) {
             const project = projectFromItem(item)
-            if (project) projects.push(project)
+            if (!project) throw new Error(`Project sidebar item missing ID at index ${index}`)
+            projects.push(project)
         }
         cursor = page.cursor ?? null
         if (cursor != null) {
             const key = String(cursor)
-            if (seenCursors.has(key)) break
+            if (seenCursors.has(key)) throw new Error(`Project pagination repeated cursor: ${key}`)
             seenCursors.add(key)
         }
     } while (cursor != null)
@@ -190,7 +191,7 @@ export async function fetchConversationList(
         cursor = page.nextCursor
         if (projectId && cursor != null) {
             const key = String(cursor)
-            if (seenCursors.has(key)) break
+            if (seenCursors.has(key)) throw new Error(`Conversation pagination repeated cursor: ${key}`)
             seenCursors.add(key)
         }
     }
@@ -260,15 +261,8 @@ export async function fetchAllConversationRecords(
     for (const item of await fetchConversationList(null, signal)) {
         byId.set(item.id, { item, project: null })
     }
-    try {
-        for (const item of await fetchConversationList(null, signal, true)) {
-            byId.set(item.id, { item, project: null })
-        }
-    }
-    catch (error) {
-        // This private endpoint has changed before. Visible and Project chats
-        // must still be archived even if an account does not expose this filter.
-        console.warn('[ChatGPT Archive] archived conversation listing failed', error)
+    for (const item of await fetchConversationList(null, signal, true)) {
+        byId.set(item.id, { item, project: null })
     }
     for (const project of projects) {
         for (const item of await fetchConversationList(project.id, signal)) {

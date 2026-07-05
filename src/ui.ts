@@ -1,4 +1,6 @@
 import { runArchive } from './archive/run'
+import { formatAuditLogEntry } from './audit-log'
+import type { AuditLogFieldValue, AuditLogLevel } from './audit-log'
 import type { ArchiveProgress, ArchiveSummary } from './archive/types'
 import {
     matchesConversationSearch,
@@ -70,8 +72,9 @@ function summaryText(summary: ArchiveSummary): string {
         `已存在 ${summary.existing}`,
         `失败附件 ${summary.failedAssets}`,
         `无法解析 ${summary.unresolvedAssets}`,
+        `仅引用 ${summary.referenceOnlyAssets}`,
         `失败对话 ${summary.failedConversations}`,
-    ].join(' · ')
+    ].join('\n')
 }
 
 function conversationDate(value: number | string | undefined, full = false): string {
@@ -107,7 +110,7 @@ export function mountUi(): void {
             </div>
             <div class="cga-toolbar">
                 <select class="cga-source" aria-label="对话来源">
-                    <option value="personal">全部对话</option>
+                    <option value="all">全部对话</option>
                     <option value="archived">归档对话</option>
                 </select>
                 <span class="cga-source-loading" role="status" hidden><span class="cga-spinner" aria-hidden="true"></span>加载中</span>
@@ -138,7 +141,14 @@ export function mountUi(): void {
                 <button class="cga-export" type="button">导出所选</button>
                 <button class="cga-cancel" type="button" hidden>取消</button>
             </div>
-            <div class="cga-status" role="status" aria-live="polite">尚未开始</div>
+            <div class="cga-log-head">
+                <strong>运行日志</strong>
+                <div class="cga-log-actions">
+                    <button class="cga-clear-log" type="button" disabled>清空日志</button>
+                    <button class="cga-copy-log" type="button" disabled>复制日志</button>
+                </div>
+            </div>
+            <pre class="cga-status" role="log" aria-live="polite" aria-label="运行日志">尚未开始</pre>
             <progress class="cga-progress" max="1" value="0"></progress>
         </div>
     `
@@ -166,6 +176,8 @@ export function mountUi(): void {
     const exportSelected = root.querySelector<HTMLButtonElement>('.cga-export')!
     const cancel = root.querySelector<HTMLButtonElement>('.cga-cancel')!
     const status = root.querySelector<HTMLElement>('.cga-status')!
+    const clearLog = root.querySelector<HTMLButtonElement>('.cga-clear-log')!
+    const copyLog = root.querySelector<HTMLButtonElement>('.cga-copy-log')!
     const progress = root.querySelector<HTMLProgressElement>('.cga-progress')!
     let controller: AbortController | null = null
     let listController: AbortController | null = null
@@ -179,6 +191,35 @@ export function mountUi(): void {
     const selectedIds = new Set<string>()
     const sourceStates = new Map<string, SourceState>()
     const recordsById = new Map<string, ConversationRecord>()
+    const auditEntries: string[] = []
+    let activeRunId: string | null = null
+
+    const renderAuditLog = () => {
+        status.textContent = auditEntries.length ? auditEntries.join('\n\n') : '尚未开始'
+        const empty = auditEntries.length === 0
+        clearLog.disabled = empty
+        copyLog.disabled = empty
+        status.scrollTop = status.scrollHeight
+    }
+
+    const appendAudit = (
+        event: string,
+        fields: Record<string, AuditLogFieldValue> = {},
+        level: AuditLogLevel = 'INFO',
+    ) => {
+        auditEntries.push(formatAuditLogEntry({
+            timestamp: new Date().toISOString(),
+            level,
+            event,
+            fields,
+        }))
+        renderAuditLog()
+    }
+
+    const resetAudit = () => {
+        auditEntries.length = 0
+        renderAuditLog()
+    }
 
     const setStatusTone = (tone: 'neutral' | 'success' | 'warning' | 'error') => {
         root.classList.toggle('cga-tone-success', tone === 'success')
@@ -328,9 +369,12 @@ export function mountUi(): void {
         loading = true
         loadingAll = all
         setStatusTone('neutral')
-        status.textContent = reset
-            ? '正在读取第一页对话…'
-            : all ? '正在加载全部对话…' : '正在加载更多对话…'
+        appendAudit('catalog.load.start', {
+            source: sourceKey,
+            mode: reset ? 'first-page' : all ? 'all-remaining' : 'next-page',
+            offset: state.nextOffset,
+            cursor: state.nextCursor == null ? null : String(state.nextCursor),
+        })
         if (reset) renderSource()
         else {
             if (all) loadAll.textContent = '正在加载全部…'
@@ -362,22 +406,29 @@ export function mountUi(): void {
 
                 if (project && state.hasMore && state.nextCursor != null) {
                     const cursorKey = String(state.nextCursor)
-                    if (seenCursors.has(cursorKey)) state.hasMore = false
-                    else seenCursors.add(cursorKey)
+                    if (seenCursors.has(cursorKey)) {
+                        throw new Error(`Conversation pagination repeated cursor: ${cursorKey}`)
+                    }
+                    seenCursors.add(cursorKey)
                 }
 
-                const loadedText = sourceKey === 'personal' && page.total != null
-                    ? `全部对话 ${state.records.length} 个 · 已扫描 ${state.nextOffset} / ${page.total}`
-                    : page.total == null
-                    ? `已加载 ${state.records.length} 个对话`
-                    : `已加载 ${state.records.length} / ${page.total} 个对话`
-                status.textContent = all && state.hasMore ? `正在加载全部 · ${loadedText}` : loadedText
+                appendAudit('catalog.page.loaded', {
+                    source: sourceKey,
+                    loaded: state.records.length,
+                    scanned: state.nextOffset,
+                    total: page.total,
+                    hasMore: state.hasMore,
+                })
             }
             while (all && state.hasMore)
         }
         catch (error) {
             if (request.signal.aborted) return
-            status.textContent = all ? '加载全部对话失败' : '对话列表加载失败'
+            appendAudit('catalog.load.error', {
+                source: sourceKey,
+                mode: all ? 'all-remaining' : reset ? 'first-page' : 'next-page',
+                message: error instanceof Error ? error.message : String(error),
+            }, 'ERROR')
             setStatusTone('error')
             if (!state.records.length) {
                 setListMessage(`加载失败：${error instanceof Error ? error.message : String(error)}`, true)
@@ -417,18 +468,21 @@ export function mountUi(): void {
         loading = true
         setStatusTone('neutral')
         setListMessage('正在加载 Project 列表…')
-        status.textContent = '正在读取 Project…'
+        appendAudit('catalog.projects.load.start')
         updateSelectionState()
         try {
             projects = await fetchProjects(request.signal)
             if (request.signal.aborted) return
             sourcesLoaded = true
             renderProjectOptions()
+            appendAudit('catalog.projects.load.complete', { projects: projects.length })
         }
         catch (error) {
             if (request.signal.aborted) return
             setListMessage(`加载失败：${error instanceof Error ? error.message : String(error)}`, true)
-            status.textContent = 'Project 列表加载失败'
+            appendAudit('catalog.projects.load.error', {
+                message: error instanceof Error ? error.message : String(error),
+            }, 'ERROR')
             setStatusTone('error')
             return
         }
@@ -446,7 +500,14 @@ export function mountUi(): void {
         const total = Math.max(value.total, 1)
         progress.max = total
         progress.value = value.current
-        status.textContent = `${value.title}${value.detail ? ` — ${value.detail}` : ''}${value.total ? ` (${value.current}/${value.total})` : ''}`
+        appendAudit('archive.progress', {
+            runId: activeRunId,
+            phase: value.phase,
+            current: value.current,
+            total: value.total,
+            title: value.title,
+            detail: value.detail,
+        })
     }
 
     const start = async () => {
@@ -455,7 +516,10 @@ export function mountUi(): void {
             .map(id => recordsById.get(id))
             .filter((record): record is ConversationRecord => record != null)
         if (records.length !== selectedIds.size) {
-            status.textContent = '部分勾选项已失效，请刷新列表后重选'
+            appendAudit('archive.selection.invalid', {
+                selected: selectedIds.size,
+                resolved: records.length,
+            }, 'ERROR')
             setStatusTone('error')
             return
         }
@@ -463,10 +527,18 @@ export function mountUi(): void {
         try {
             const folder = await window.showDirectoryPicker({ id: 'chatgpt-archive', mode: 'readwrite' })
             controller = new AbortController()
+            activeRunId = crypto.randomUUID()
+            resetAudit()
+            appendAudit('archive.start', {
+                runId: activeRunId,
+                mode: 'selected',
+                destination: folder.name,
+                selectedCount: selectedIds.size,
+                selectedConversationIds: [...selectedIds].join('\n'),
+            })
             setRunning(true)
             setStatusTone('neutral')
             progress.value = 0
-            status.textContent = '开始读取…'
             const summary = await runArchive({
                 root: folder,
                 mode: 'selected',
@@ -475,27 +547,46 @@ export function mountUi(): void {
                 signal: controller.signal,
                 onProgress: update,
             })
-            status.textContent = summaryText(summary)
             const hasErrors = summary.failedConversations > 0
                 || summary.failedProjects > 0
                 || summary.failedAssets > 0
                 || summary.unresolvedAssets > 0
+            for (const itemError of summary.errors) {
+                appendAudit('archive.item.error', {
+                    runId: activeRunId,
+                    conversationId: itemError.conversationId,
+                    title: itemError.title,
+                    message: itemError.error,
+                }, 'ERROR')
+            }
+            appendAudit('archive.complete', {
+                runId: activeRunId,
+                summary: summaryText(summary),
+            }, hasErrors ? 'ERROR' : summary.incompleteProjects > 0 ? 'WARN' : 'INFO')
             setStatusTone(hasErrors
                 ? 'error'
                 : summary.incompleteProjects > 0 ? 'warning' : 'success')
         }
         catch (error) {
             if ((error as { name?: string })?.name === 'AbortError') {
-                status.textContent = '已取消，已写入的文件保留'
+                appendAudit('archive.cancelled', {
+                    runId: activeRunId,
+                    message: '已写入的文件保留',
+                }, 'WARN')
                 setStatusTone('warning')
             }
             else {
-                status.textContent = `失败：${error instanceof Error ? error.message : String(error)}`
+                appendAudit('archive.error', {
+                    runId: activeRunId,
+                    message: error instanceof Error ? error.message : String(error),
+                    stack: error instanceof Error ? error.stack : undefined,
+                }, 'ERROR')
                 setStatusTone('error')
             }
         }
         finally {
             controller = null
+            activeRunId = null
             setRunning(false)
         }
     }
@@ -533,7 +624,22 @@ export function mountUi(): void {
             window.setTimeout(() => { copySeparator.textContent = SEARCH_SEPARATOR }, 1200)
         }
         catch {
-            status.textContent = `复制失败，请手动复制 ${SEARCH_SEPARATOR}`
+            appendAudit('search.separator.copy.warning', {}, 'WARN')
+            setStatusTone('warning')
+        }
+    })
+    clearLog.addEventListener('click', () => {
+        resetAudit()
+        setStatusTone('neutral')
+    })
+    copyLog.addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(auditEntries.join('\n\n'))
+            copyLog.textContent = '已复制'
+            window.setTimeout(() => { copyLog.textContent = '复制日志' }, 1200)
+        }
+        catch {
+            appendAudit('log.copy.warning', {}, 'WARN')
             setStatusTone('warning')
         }
     })

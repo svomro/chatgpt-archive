@@ -15,6 +15,7 @@ vi.mock('../chatgpt/api', () => ({
 }))
 
 import { downloadAsset } from './download'
+import { assetFileName } from './naming'
 
 class MemoryDirectory {
     files = new Map<string, Blob>()
@@ -48,6 +49,8 @@ function asset(overrides: Partial<DiscoveredAsset> = {}): DiscoveredAsset {
         mimeTypes: ['image/png'],
         expectedSizes: [4],
         references: [],
+        referenceOnly: false,
+        referenceOnlyReason: null,
         ...overrides,
     }
 }
@@ -186,6 +189,51 @@ describe('downloadAsset', () => {
 
         expect(result.status).toBe('downloaded')
         expect(await folder.files.get(name)?.text()).toBe('<html>fresh artifact</html>')
+    })
+
+    it('reuses an existing local file before applying reference-only', async () => {
+        const folder = new MemoryDirectory()
+        const reference = asset({
+            names: ['context.txt'],
+            mimeTypes: ['text/plain'],
+            expectedSizes: [],
+            referenceOnly: true,
+            referenceOnlyReason: 'No user upload record and no direct URL, sandbox file, or inline data',
+        })
+        const name = assetFileName(reference)
+        folder.files.set(name, new Blob(['kept'], { type: 'text/plain' }))
+
+        const result = await downloadAsset(
+            reference,
+            folder as unknown as FileSystemDirectoryHandle,
+            new AbortController().signal,
+        )
+
+        expect(result.status).toBe('existing')
+        expect(result.localFile).toBe(name)
+        expect(api.resolveFileDownload).not.toHaveBeenCalled()
+        expect(api.fetchFileResponse).not.toHaveBeenCalled()
+    })
+
+    it('keeps a reference-only file in the manifest without resolving or downloading it', async () => {
+        const folder = new MemoryDirectory()
+        const result = await downloadAsset(
+            asset({
+                names: ['context.txt'],
+                mimeTypes: ['text/plain'],
+                expectedSizes: [],
+                referenceOnly: true,
+                referenceOnlyReason: 'No user upload record and no direct URL, sandbox file, or inline data',
+            }),
+            folder as unknown as FileSystemDirectoryHandle,
+            new AbortController().signal,
+        )
+
+        expect(result.status).toBe('reference-only')
+        expect(result.reason).toContain('No user upload record')
+        expect(result.attempts).toBe(0)
+        expect(api.resolveFileDownload).not.toHaveBeenCalled()
+        expect(api.fetchFileResponse).not.toHaveBeenCalled()
     })
 
     it('keeps an unresolved sandbox path visible in the manifest', async () => {

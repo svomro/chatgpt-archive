@@ -32,9 +32,11 @@ export interface DiscoveredAsset {
     mimeTypes: string[]
     expectedSizes: number[]
     references: AssetReference[]
+    referenceOnly: boolean
+    referenceOnlyReason: string | null
 }
 
-export type AssetStatus = 'downloaded' | 'existing' | 'failed' | 'unresolved'
+export type AssetStatus = 'downloaded' | 'existing' | 'failed' | 'unresolved' | 'reference-only'
 
 export interface AssetManifestEntry {
     key: string
@@ -48,6 +50,7 @@ export interface AssetManifestEntry {
     sha256: string | null
     attempts: number
     error: string | null
+    reason: string | null
     references: AssetReference[]
 }
 
@@ -60,6 +63,7 @@ export interface AttachmentManifest {
     existing: number
     failed: number
     unresolved: number
+    referenceOnly: number
     complete: boolean
     coverageWarnings: string[]
     assets: AssetManifestEntry[]
@@ -89,5 +93,6 @@ export interface ArchiveSummary {
     existing: number
     failedAssets: number
     unresolvedAssets: number
+    referenceOnlyAssets: number
     errors: Array<{ conversationId: string; title: string; error: string }>
 }

@@ -18,11 +18,13 @@ import {
 import type {
     ArchiveProgress,
     ArchiveSummary,
+    AssetManifestEntry,
     AttachmentManifest,
+    DiscoveredAsset,
 } from './types'
 import { directory, writeJson } from './writer'
 
-const MANIFEST_VERSION = 1
+const MANIFEST_VERSION = 2
 const ATTACHMENT_CONCURRENCY = 2
 
 export interface ArchiveOptions {
@@ -76,6 +78,7 @@ function createManifest(
     const existing = entries.filter(entry => entry.status === 'existing').length
     const failed = entries.filter(entry => entry.status === 'failed').length
     const unresolved = entries.filter(entry => entry.status === 'unresolved').length
+    const referenceOnly = entries.filter(entry => entry.status === 'reference-only').length
     return {
         version: MANIFEST_VERSION,
         generatedAt: new Date().toISOString(),
@@ -85,10 +88,22 @@ function createManifest(
         existing,
         failed,
         unresolved,
+        referenceOnly,
         complete: failed === 0 && unresolved === 0 && coverageWarnings.length === 0,
         coverageWarnings,
         assets: entries,
     }
+}
+
+function assetProgressDetail(
+    index: number,
+    total: number,
+    asset: DiscoveredAsset,
+    entry: AssetManifestEntry,
+): string {
+    const name = entry.localFile ?? asset.names[0] ?? asset.fileId ?? asset.key
+    const detail = entry.error ?? entry.reason
+    return `附件 ${index}/${total} · ${entry.status}: ${name}${detail ? ` · ${detail}` : ''}`
 }
 
 function currentConversationId(): string | null {
@@ -150,6 +165,7 @@ export async function runArchive(options: ArchiveOptions): Promise<ArchiveSummar
         existing: 0,
         failedAssets: 0,
         unresolvedAssets: 0,
+        referenceOnlyAssets: 0,
         errors: [],
     }
 
@@ -164,14 +180,15 @@ export async function runArchive(options: ArchiveOptions): Promise<ArchiveSummar
             await writeJson(projectFolder, 'project.json', project.raw)
             const projectAssets = discoverProjectAssets(project)
             const entries = await mapConcurrent(projectAssets, ATTACHMENT_CONCURRENCY, async (asset, assetIndex) => {
+                const entry = await downloadAsset(asset, projectFolder, signal)
                 onProgress?.({
                     phase: 'attachments',
                     current: projectIndex + 1,
                     total,
                     title: `Project: ${project.name}`,
-                    detail: `来源文件 ${assetIndex + 1}/${projectAssets.length}`,
+                    detail: assetProgressDetail(assetIndex + 1, projectAssets.length, asset, entry),
                 })
-                return downloadAsset(asset, projectFolder, signal)
+                return entry
             })
             const manifest = createManifest(`project:${project.id}`, entries, [
                 'Project Sources has not been independently enumerated; this manifest covers only file references present in the Project sidebar response.',
@@ -181,6 +198,7 @@ export async function runArchive(options: ArchiveOptions): Promise<ArchiveSummar
             summary.existing += manifest.existing
             summary.failedAssets += manifest.failed
             summary.unresolvedAssets += manifest.unresolved
+            summary.referenceOnlyAssets += manifest.referenceOnly
             if (manifest.failed > 0 || manifest.unresolved > 0) summary.failedProjects += 1
             else if (manifest.coverageWarnings.length > 0) summary.incompleteProjects += 1
         }
@@ -230,7 +248,7 @@ export async function runArchive(options: ArchiveOptions): Promise<ArchiveSummar
                     current: index + 1,
                     total: records.length,
                     title: String(conversation.title ?? record.item.title ?? record.item.id),
-                    detail: `附件 ${completedAssets}/${assets.length}: ${entry.localFile ?? asset.fileId ?? asset.key}`,
+                    detail: assetProgressDetail(completedAssets, assets.length, asset, entry),
                 })
                 return entry
             })
@@ -241,6 +259,7 @@ export async function runArchive(options: ArchiveOptions): Promise<ArchiveSummar
             summary.existing += manifest.existing
             summary.failedAssets += manifest.failed
             summary.unresolvedAssets += manifest.unresolved
+            summary.referenceOnlyAssets += manifest.referenceOnly
             if (manifest.complete) summary.completeConversations += 1
             else summary.failedConversations += 1
         }
@@ -267,13 +286,16 @@ export async function runArchive(options: ArchiveOptions): Promise<ArchiveSummar
         current: records.length,
         total: records.length,
         title: '完成',
-        detail: summary.failedConversations === 0
-            && summary.failedProjects === 0
-            && summary.incompleteProjects === 0
-            && summary.failedAssets === 0
-            && summary.unresolvedAssets === 0
-            ? '所有附件均已保存'
-            : '存在失败或无法解析的附件',
+        detail: summary.failedConversations > 0
+            || summary.failedProjects > 0
+            || summary.failedAssets > 0
+            || summary.unresolvedAssets > 0
+            ? '存在失败或无法解析的附件'
+            : summary.incompleteProjects > 0
+                ? '可下载附件均已保存，Project 来源覆盖仍待补充'
+                : summary.referenceOnlyAssets > 0
+                    ? `可下载附件均已保存，保留 ${summary.referenceOnlyAssets} 个仅引用文件`
+                    : '所有附件均已保存',
     })
     return summary
 }

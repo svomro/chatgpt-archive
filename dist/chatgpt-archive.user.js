@@ -13,7 +13,7 @@
 // @run-at       document-end
 // ==/UserScript==
 
-(e=>{if(typeof GM_addStyle=="function"){GM_addStyle(e);return}const a=document.createElement("style");a.textContent=e,document.head.append(a)})(" #chatgpt-archive-root{position:relative;z-index:2147483647;display:flex;flex:0 0 auto;align-items:center;color:inherit;font:13px/1.45 ui-sans-serif,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif}#chatgpt-archive-root[data-docked=false]{display:none}#chatgpt-archive-root button{border:0;border-radius:9px;cursor:pointer;font:inherit}#chatgpt-archive-root button:disabled{cursor:not-allowed;opacity:.45}.cga-launch{position:relative;display:inline-flex;width:36px;height:36px;align-items:center;justify-content:center;padding:0;background:transparent;color:inherit}.cga-launch:hover,.cga-launch:focus-visible{background:var(--token-interactive-bg-secondary-hover, rgb(0 0 0 / .08));color:var(--text-primary, #0d0d0d)}.cga-launch svg{display:block}.cga-launch:after{position:absolute;bottom:calc(100% + 8px);left:50%;z-index:2147483647;padding:5px 8px;border-radius:6px;background:#171717;color:#fff;content:attr(data-tooltip);font-size:12px;line-height:1;opacity:0;pointer-events:none;transform:translate(-50%) translateY(3px);transition:opacity .12s ease,transform .12s ease;white-space:nowrap}.cga-launch:hover:after,.cga-launch:focus-visible:after{opacity:1;transform:translate(-50%) translateY(0)}.cga-panel{position:fixed;bottom:72px;left:8px;z-index:2147483647;width:min(520px,calc(100vw - 16px));max-height:calc(100vh - 88px);padding:16px;border:1px solid #d1d5db;border-radius:14px;background:#fff;color:#1f2937;box-shadow:0 15px 45px #0003}.cga-head,.cga-toolbar,.cga-selection-toolbar,.cga-actions{display:flex;align-items:center;gap:8px}.cga-head{justify-content:space-between}.cga-head strong{font-size:15px}.cga-toolbar{flex-wrap:wrap;margin-top:12px;padding:8px 0;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb}.cga-source,.cga-search{min-width:0;padding:6px 8px;border:1px solid #d1d5db;border-radius:7px;background:#fff;color:inherit;font:inherit}.cga-source{max-width:210px}.cga-source-loading{display:inline-flex;align-items:center;gap:5px;color:#6b7280;font-size:12px;white-space:nowrap}.cga-source-loading[hidden]{display:none}.cga-spinner{width:13px;height:13px;border:2px solid #d1d5db;border-top-color:#10a37f;border-radius:50%;animation:cga-spin .7s linear infinite}@keyframes cga-spin{to{transform:rotate(360deg)}}.cga-search{flex:1 1 160px}.cga-search-help{display:flex;flex:1 0 100%;align-items:center;gap:5px;color:#6b7280;font-size:11px}.cga-copy-separator{padding:2px 7px;background:#e5e7eb;color:#111827;font-weight:600;-webkit-user-select:all;user-select:all}.cga-selection-toolbar{padding:8px 2px}.cga-selection-toolbar label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}.cga-selected-count{margin-left:auto;color:#6b7280}.cga-refresh{margin-left:auto;padding:5px 9px;background:#e5e7eb;color:#111827}.cga-list-header,.cga-conversation{display:grid;min-width:0;grid-template-columns:15px minmax(0,1fr) 76px 76px;align-items:center;gap:9px}.cga-list-header{padding:5px 8px;color:#6b7280;font-size:11px}.cga-list-header button{overflow:hidden;padding:2px 0;background:transparent;color:inherit;font-size:inherit;text-align:left;text-overflow:ellipsis;white-space:nowrap}.cga-list-header .cga-sort-active{color:#047857;font-weight:600}.cga-selection-list{max-height:min(52vh,520px);overflow:auto;overscroll-behavior:contain;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb}.cga-list-message{margin:18px 0;color:#6b7280;text-align:center}.cga-list-error{color:#b91c1c}.cga-conversation{padding:7px 8px;border-radius:8px;cursor:pointer}.cga-conversation:hover{background:#f3f4f6}.cga-conversation-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cga-conversation-date{overflow:hidden;color:#6b7280;font-size:10.5px;text-overflow:ellipsis;white-space:nowrap}.cga-conversation-date.cga-date-active{color:#047857}.cga-selection-toolbar input,.cga-conversation input{width:15px;height:15px;flex:0 0 auto;accent-color:#10a37f}.cga-page-actions{display:flex;justify-content:center;gap:8px;margin-top:10px}.cga-page-actions button{padding:6px 12px;background:#e5e7eb;color:#111827}.cga-page-actions button[hidden]{display:none}.cga-close{width:28px;height:28px;background:transparent;color:inherit;font-size:20px!important}.cga-actions{flex-wrap:wrap;margin:12px 0}.cga-actions button{padding:7px 10px;background:#e5e7eb;color:#111827}.cga-actions .cga-export{background:#10a37f;color:#fff}.cga-actions .cga-cancel{background:#fee2e2;color:#991b1b}.cga-status{max-height:90px;overflow:auto;word-break:break-word}.cga-progress{width:100%;margin-top:9px}.cga-tone-success .cga-status{color:#15803d}.cga-tone-warning .cga-status{color:#b45309}.cga-tone-error .cga-status{color:#b91c1c}@media(prefers-color-scheme:dark){.cga-panel{border-color:#4b5563;background:#202123;color:#e5e7eb}.cga-toolbar,.cga-selection-list{border-color:#374151}.cga-source,.cga-search{border-color:#4b5563;background:#202123;color:#e5e7eb}.cga-selected-count,.cga-source-loading,.cga-search-help,.cga-list-message,.cga-conversation-date,.cga-list-header{color:#9ca3af}.cga-list-header .cga-sort-active,.cga-conversation-date.cga-date-active{color:#34d399}.cga-list-error{color:#f87171}.cga-conversation:hover{background:#2f3033}.cga-refresh,.cga-copy-separator,.cga-page-actions button,.cga-actions button{background:#374151;color:#f9fafb}.cga-actions .cga-export{background:#10a37f;color:#fff}.cga-tone-success .cga-status{color:#4ade80}.cga-tone-warning .cga-status{color:#fbbf24}.cga-tone-error .cga-status{color:#f87171}} ");
+(e=>{if(typeof GM_addStyle=="function"){GM_addStyle(e);return}const a=document.createElement("style");a.textContent=e,document.head.append(a)})(" #chatgpt-archive-root{position:relative;z-index:2147483647;display:flex;flex:0 0 auto;align-items:center;color:inherit;font:13px/1.45 ui-sans-serif,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif}#chatgpt-archive-root[data-docked=false]{display:none}#chatgpt-archive-root button{border:0;border-radius:9px;cursor:pointer;font:inherit}#chatgpt-archive-root button:disabled{cursor:not-allowed;opacity:.45}.cga-launch{position:relative;display:inline-flex;width:36px;height:36px;align-items:center;justify-content:center;padding:0;background:transparent;color:inherit}.cga-launch:hover,.cga-launch:focus-visible{background:var(--token-interactive-bg-secondary-hover, rgb(0 0 0 / .08));color:var(--text-primary, #0d0d0d)}.cga-launch svg{display:block}.cga-launch:after{position:absolute;bottom:calc(100% + 8px);left:50%;z-index:2147483647;padding:5px 8px;border-radius:6px;background:#171717;color:#fff;content:attr(data-tooltip);font-size:12px;line-height:1;opacity:0;pointer-events:none;transform:translate(-50%) translateY(3px);transition:opacity .12s ease,transform .12s ease;white-space:nowrap}.cga-launch:hover:after,.cga-launch:focus-visible:after{opacity:1;transform:translate(-50%) translateY(0)}.cga-panel{position:fixed;bottom:72px;left:8px;z-index:2147483647;box-sizing:border-box;width:min(520px,calc(100vw - 16px));max-height:calc(100vh - 88px);padding:16px;overflow-y:auto;overscroll-behavior:contain;border:1px solid #d1d5db;border-radius:14px;background:#fff;color:#1f2937;box-shadow:0 15px 45px #0003}.cga-head,.cga-toolbar,.cga-selection-toolbar,.cga-actions{display:flex;align-items:center;gap:8px}.cga-head{justify-content:space-between}.cga-head strong{font-size:15px}.cga-toolbar{flex-wrap:wrap;margin-top:12px;padding:8px 0;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb}.cga-source,.cga-search{min-width:0;padding:6px 8px;border:1px solid #d1d5db;border-radius:7px;background:#fff;color:inherit;font:inherit}.cga-source{max-width:210px}.cga-source-loading{display:inline-flex;align-items:center;gap:5px;color:#6b7280;font-size:12px;white-space:nowrap}.cga-source-loading[hidden]{display:none}.cga-spinner{width:13px;height:13px;border:2px solid #d1d5db;border-top-color:#10a37f;border-radius:50%;animation:cga-spin .7s linear infinite}@keyframes cga-spin{to{transform:rotate(360deg)}}.cga-search{flex:1 1 160px}.cga-search-help{display:flex;flex:1 0 100%;align-items:center;gap:5px;color:#6b7280;font-size:11px}.cga-copy-separator{padding:2px 7px;background:#e5e7eb;color:#111827;font-weight:600;-webkit-user-select:all;user-select:all}.cga-selection-toolbar{padding:8px 2px}.cga-selection-toolbar label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}.cga-selected-count{margin-left:auto;color:#6b7280}.cga-refresh{margin-left:auto;padding:5px 9px;background:#e5e7eb;color:#111827}.cga-list-header,.cga-conversation{display:grid;min-width:0;grid-template-columns:15px minmax(0,1fr) 76px 76px;align-items:center;gap:9px}.cga-list-header{padding:5px 8px;color:#6b7280;font-size:11px}.cga-list-header button{overflow:hidden;padding:2px 0;background:transparent;color:inherit;font-size:inherit;text-align:left;text-overflow:ellipsis;white-space:nowrap}.cga-list-header .cga-sort-active{color:#047857;font-weight:600}.cga-selection-list{max-height:min(52vh,520px);overflow:auto;overscroll-behavior:contain;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb}.cga-list-message{margin:18px 0;color:#6b7280;text-align:center}.cga-list-error{color:#b91c1c}.cga-conversation{padding:7px 8px;border-radius:8px;cursor:pointer}.cga-conversation:hover{background:#f3f4f6}.cga-conversation-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cga-conversation-date{overflow:hidden;color:#6b7280;font-size:10.5px;text-overflow:ellipsis;white-space:nowrap}.cga-conversation-date.cga-date-active{color:#047857}.cga-selection-toolbar input,.cga-conversation input{width:15px;height:15px;flex:0 0 auto;accent-color:#10a37f}.cga-page-actions{display:flex;justify-content:center;gap:8px;margin-top:10px}.cga-page-actions button{padding:6px 12px;background:#e5e7eb;color:#111827}.cga-page-actions button[hidden]{display:none}.cga-close{width:28px;height:28px;background:transparent;color:inherit;font-size:20px!important}.cga-actions{flex-wrap:wrap;margin:12px 0}.cga-actions button{padding:7px 10px;background:#e5e7eb;color:#111827}.cga-actions .cga-export{background:#10a37f;color:#fff}.cga-actions .cga-cancel{background:#fee2e2;color:#991b1b}.cga-log-head{display:flex;align-items:center;justify-content:space-between;gap:8px}.cga-log-head strong{font-size:12px}.cga-log-actions{display:flex;gap:6px}.cga-log-actions button{padding:5px 9px;background:#e5e7eb;color:#111827}.cga-status{min-height:110px;max-height:240px;margin:6px 0 0;padding:10px;overflow:auto;border:1px solid #e5e7eb;border-radius:8px;background:#f9fafb;color:inherit;font:11px/1.5 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;white-space:pre-wrap;word-break:break-word;-webkit-user-select:text;user-select:text}.cga-progress{width:100%;margin-top:9px}.cga-tone-success .cga-status{color:#15803d}.cga-tone-warning .cga-status{color:#b45309}.cga-tone-error .cga-status{color:#b91c1c}@media(prefers-color-scheme:dark){.cga-panel{border-color:#4b5563;background:#202123;color:#e5e7eb}.cga-toolbar,.cga-selection-list{border-color:#374151}.cga-source,.cga-search{border-color:#4b5563;background:#202123;color:#e5e7eb}.cga-selected-count,.cga-source-loading,.cga-search-help,.cga-list-message,.cga-conversation-date,.cga-list-header{color:#9ca3af}.cga-list-header .cga-sort-active,.cga-conversation-date.cga-date-active{color:#34d399}.cga-list-error{color:#f87171}.cga-conversation:hover{background:#2f3033}.cga-refresh,.cga-copy-separator,.cga-log-actions button,.cga-page-actions button{background:#374151;color:#f9fafb}.cga-status{border-color:#374151;background:#171717}.cga-actions button{background:#374151;color:#f9fafb}.cga-actions .cga-export{background:#10a37f;color:#fff}.cga-tone-success .cga-status{color:#4ade80}.cga-tone-warning .cga-status{color:#fbbf24}.cga-tone-error .cga-status{color:#f87171}} ");
 
 (function () {
   'use strict';
@@ -57,7 +57,7 @@
           "X-Authorization": `Bearer ${accessToken}`
         }
       });
-      if (!response.ok) return null;
+      if (!response.ok) throw new ApiError(`Account scope request failed: ${response.status}`, response.status);
       const payload = await response.json();
       return ((_c = (_b = (_a = payload == null ? void 0 : payload.accounts) == null ? void 0 : _a[workspace]) == null ? void 0 : _b.account) == null ? void 0 : _c.account_id) ?? null;
     })());
@@ -149,14 +149,15 @@
         `/gizmos/snorlax/sidebar?${params}`,
         signal
       );
-      for (const item of page.items ?? []) {
+      for (const [index, item] of (page.items ?? []).entries()) {
         const project = projectFromItem(item);
-        if (project) projects.push(project);
+        if (!project) throw new Error(`Project sidebar item missing ID at index ${index}`);
+        projects.push(project);
       }
       cursor = page.cursor ?? null;
       if (cursor != null) {
         const key = String(cursor);
-        if (seenCursors.has(key)) break;
+        if (seenCursors.has(key)) throw new Error(`Project pagination repeated cursor: ${key}`);
         seenCursors.add(key);
       }
     } while (cursor != null);
@@ -175,7 +176,7 @@
       cursor = page.nextCursor;
       if (projectId && cursor != null) {
         const key = String(cursor);
-        if (seenCursors.has(key)) break;
+        if (seenCursors.has(key)) throw new Error(`Conversation pagination repeated cursor: ${key}`);
         seenCursors.add(key);
       }
     }
@@ -222,12 +223,8 @@
     for (const item of await fetchConversationList(null, signal)) {
       byId.set(item.id, { item, project: null });
     }
-    try {
-      for (const item of await fetchConversationList(null, signal, true)) {
-        byId.set(item.id, { item, project: null });
-      }
-    } catch (error) {
-      console.warn("[ChatGPT Archive] archived conversation listing failed", error);
+    for (const item of await fetchConversationList(null, signal, true)) {
+      byId.set(item.id, { item, project: null });
     }
     for (const project of projects) {
       for (const item of await fetchConversationList(project.id, signal)) {
@@ -331,7 +328,7 @@
   }
   function hintsFromObject(value, inherited) {
     const name = strings(value.name)[0] ?? strings(value.file_name)[0] ?? strings(value.filename)[0] ?? inherited.name;
-    const mimeType = strings(value.mime_type)[0] ?? strings(value.mimetype)[0] ?? strings(value.media_type)[0] ?? inherited.mimeType;
+    const mimeType = strings(value.mime_type)[0] ?? strings(value.mimeType)[0] ?? strings(value.mimetype)[0] ?? strings(value.media_type)[0] ?? inherited.mimeType;
     const expectedSize = number(value.size_bytes) ?? number(value.file_size_bytes) ?? number(value.file_size) ?? number(value.size) ?? inherited.expectedSize;
     return { name, mimeType, expectedSize };
   }
@@ -397,6 +394,8 @@
           mimeTypes: [],
           expectedSizes: [],
           references: [],
+          referenceOnly: false,
+          referenceOnlyReason: null,
           aliasSet: /* @__PURE__ */ new Set(),
           directUrlSet: /* @__PURE__ */ new Set(),
           sandboxPathSet: /* @__PURE__ */ new Set(),
@@ -583,18 +582,26 @@ ${reference.kind}`;
       sandboxAsset.sandboxPathSet.forEach((path) => target.sandboxPathSet.add(path));
       assets.delete(key);
     }
-    return [...assets.values()].map((asset) => ({
-      key: asset.key,
-      fileId: asset.fileId,
-      aliases: [...asset.aliasSet],
-      directUrls: [...asset.directUrlSet],
-      inlineDataUrl: asset.inlineDataUrl,
-      sandboxPaths: [...asset.sandboxPathSet],
-      names: [...asset.nameSet],
-      mimeTypes: [...asset.mimeTypeSet],
-      expectedSizes: [...asset.expectedSizeSet],
-      references: asset.references
-    }));
+    return [...assets.values()].map((asset) => {
+      const hasUserUpload = asset.references.some((reference) => reference.kind === "user-upload");
+      const hasIndependentBytes = asset.directUrlSet.size > 0 || asset.sandboxPathSet.size > 0 || asset.inlineDataUrl != null;
+      const referenceOnly = !hasUserUpload && !hasIndependentBytes;
+      const referenceOnlyReason = referenceOnly ? "No user upload record and no direct URL, sandbox file, or inline data" : null;
+      return {
+        key: asset.key,
+        fileId: asset.fileId,
+        aliases: [...asset.aliasSet],
+        directUrls: [...asset.directUrlSet],
+        inlineDataUrl: asset.inlineDataUrl,
+        sandboxPaths: [...asset.sandboxPathSet],
+        names: [...asset.nameSet],
+        mimeTypes: [...asset.mimeTypeSet],
+        expectedSizes: [...asset.expectedSizeSet],
+        references: asset.references,
+        referenceOnly,
+        referenceOnlyReason
+      };
+    });
   }
   function discoverProjectAssets(project) {
     return discoverAssets({
@@ -848,6 +855,22 @@ ${reference.kind}`;
       throw error;
     }
   }
+  async function existingFileByMarkers(folder, markers) {
+    var _a;
+    const entries = (_a = folder.entries) == null ? void 0 : _a.call(folder);
+    if (!entries) return null;
+    const tokens = [...new Set(markers.filter(Boolean))].map((marker) => `[${marker}]`);
+    if (!tokens.length) return null;
+    const matches = [];
+    for await (const [name, handle] of entries) {
+      if (handle.kind !== "file" || !tokens.some((token) => name.includes(token))) continue;
+      matches.push(await handle.getFile());
+    }
+    if (matches.length > 1) {
+      throw new Error(`Multiple local files match attachment markers: ${markers.join(", ")}`);
+    }
+    return matches[0] ?? null;
+  }
   async function sha256(blob) {
     const digest = await crypto.subtle.digest("SHA-256", await blob.arrayBuffer());
     return [...new Uint8Array(digest)].map((value) => value.toString(16).padStart(2, "0")).join("");
@@ -962,6 +985,7 @@ ${reference.kind}`;
       sha256: null,
       attempts: 0,
       error: null,
+      reason: asset.referenceOnlyReason,
       references: asset.references
     };
   }
@@ -972,15 +996,19 @@ ${reference.kind}`;
       asset.names[0] ?? null,
       asset.mimeTypes[0] ?? null
     );
-    const hintedExisting = await existingFile(folder, hintedName);
+    const hintedExisting = await existingFile(folder, hintedName) ?? await existingFileByMarkers(folder, asset.aliases);
     const hintedSize = asset.expectedSizes[0] ?? null;
     if (hintedExisting && await isUsableExistingFile(hintedExisting, hintedSize)) {
-      manifest.localFile = hintedName;
+      manifest.localFile = hintedExisting.name;
       manifest.status = "existing";
       manifest.mimeType = hintedExisting.type || asset.mimeTypes[0] || null;
       manifest.expectedSize = hintedSize;
       manifest.actualSize = hintedExisting.size;
       manifest.sha256 = await manifestHash(hintedExisting);
+      return manifest;
+    }
+    if (asset.referenceOnly) {
+      manifest.status = "reference-only";
       return manifest;
     }
     if (!asset.fileId && !asset.inlineDataUrl && asset.directUrls.length === 0) {
@@ -1043,7 +1071,7 @@ ${reference.kind}`;
     await Promise.all(runners);
     return results;
   }
-  const MANIFEST_VERSION = 1;
+  const MANIFEST_VERSION = 2;
   const ATTACHMENT_CONCURRENCY = 2;
   function projectIdOf(conversation) {
     const value = conversation.gizmo_id ?? conversation.conversation_template_id;
@@ -1071,6 +1099,7 @@ ${reference.kind}`;
     const existing = entries.filter((entry) => entry.status === "existing").length;
     const failed = entries.filter((entry) => entry.status === "failed").length;
     const unresolved = entries.filter((entry) => entry.status === "unresolved").length;
+    const referenceOnly = entries.filter((entry) => entry.status === "reference-only").length;
     return {
       version: MANIFEST_VERSION,
       generatedAt: (/* @__PURE__ */ new Date()).toISOString(),
@@ -1080,10 +1109,16 @@ ${reference.kind}`;
       existing,
       failed,
       unresolved,
+      referenceOnly,
       complete: failed === 0 && unresolved === 0 && coverageWarnings.length === 0,
       coverageWarnings,
       assets: entries
     };
+  }
+  function assetProgressDetail(index, total, asset, entry) {
+    const name = entry.localFile ?? asset.names[0] ?? asset.fileId ?? asset.key;
+    const detail = entry.error ?? entry.reason;
+    return `附件 ${index}/${total} · ${entry.status}: ${name}${detail ? ` · ${detail}` : ""}`;
   }
   async function runArchive(options) {
     const { signal, onProgress } = options;
@@ -1118,6 +1153,7 @@ ${reference.kind}`;
       existing: 0,
       failedAssets: 0,
       unresolvedAssets: 0,
+      referenceOnlyAssets: 0,
       errors: []
     };
     const archivedProjectIds = /* @__PURE__ */ new Set();
@@ -1131,14 +1167,15 @@ ${reference.kind}`;
         await writeJson(projectFolder, "project.json", project.raw);
         const projectAssets = discoverProjectAssets(project);
         const entries = await mapConcurrent(projectAssets, ATTACHMENT_CONCURRENCY, async (asset, assetIndex) => {
+          const entry = await downloadAsset(asset, projectFolder, signal);
           onProgress == null ? void 0 : onProgress({
             phase: "attachments",
             current: projectIndex + 1,
             total,
             title: `Project: ${project.name}`,
-            detail: `来源文件 ${assetIndex + 1}/${projectAssets.length}`
+            detail: assetProgressDetail(assetIndex + 1, projectAssets.length, asset, entry)
           });
-          return downloadAsset(asset, projectFolder, signal);
+          return entry;
         });
         const manifest = createManifest(`project:${project.id}`, entries, [
           "Project Sources has not been independently enumerated; this manifest covers only file references present in the Project sidebar response."
@@ -1148,6 +1185,7 @@ ${reference.kind}`;
         summary.existing += manifest.existing;
         summary.failedAssets += manifest.failed;
         summary.unresolvedAssets += manifest.unresolved;
+        summary.referenceOnlyAssets += manifest.referenceOnly;
         if (manifest.failed > 0 || manifest.unresolved > 0) summary.failedProjects += 1;
         else if (manifest.coverageWarnings.length > 0) summary.incompleteProjects += 1;
       } catch (error) {
@@ -1187,7 +1225,7 @@ ${reference.kind}`;
             current: index + 1,
             total: records.length,
             title: String(conversation.title ?? record.item.title ?? record.item.id),
-            detail: `附件 ${completedAssets}/${assets.length}: ${entry.localFile ?? asset.fileId ?? asset.key}`
+            detail: assetProgressDetail(completedAssets, assets.length, asset, entry)
           });
           return entry;
         });
@@ -1197,6 +1235,7 @@ ${reference.kind}`;
         summary.existing += manifest.existing;
         summary.failedAssets += manifest.failed;
         summary.unresolvedAssets += manifest.unresolved;
+        summary.referenceOnlyAssets += manifest.referenceOnly;
         if (manifest.complete) summary.completeConversations += 1;
         else summary.failedConversations += 1;
       } catch (error) {
@@ -1220,9 +1259,27 @@ ${reference.kind}`;
       current: records.length,
       total: records.length,
       title: "完成",
-      detail: summary.failedConversations === 0 && summary.failedProjects === 0 && summary.incompleteProjects === 0 && summary.failedAssets === 0 && summary.unresolvedAssets === 0 ? "所有附件均已保存" : "存在失败或无法解析的附件"
+      detail: summary.failedConversations > 0 || summary.failedProjects > 0 || summary.failedAssets > 0 || summary.unresolvedAssets > 0 ? "存在失败或无法解析的附件" : summary.incompleteProjects > 0 ? "可下载附件均已保存，Project 来源覆盖仍待补充" : summary.referenceOnlyAssets > 0 ? `可下载附件均已保存，保留 ${summary.referenceOnlyAssets} 个仅引用文件` : "所有附件均已保存"
     });
     return summary;
+  }
+  function fieldLines(value) {
+    if (value === null) return ["null"];
+    return String(value).replace(/\r\n?/g, "\n").split("\n");
+  }
+  function formatAuditLogEntry(entry) {
+    const lines = [`[${entry.timestamp}] ${entry.level} ${entry.event}`];
+    for (const [key, value] of Object.entries(entry.fields ?? {})) {
+      if (value === void 0) continue;
+      const values = fieldLines(value);
+      if (values.length === 1) {
+        lines.push(`  ${key}: ${values[0]}`);
+        continue;
+      }
+      lines.push(`  ${key}: |`);
+      lines.push(...values.map((line) => `    ${line}`));
+    }
+    return lines.join("\n");
   }
   const ROOT_ID = "chatgpt-archive-root";
   const ARCHIVED_SOURCE = "archived";
@@ -1262,8 +1319,9 @@ ${reference.kind}`;
       `已存在 ${summary.existing}`,
       `失败附件 ${summary.failedAssets}`,
       `无法解析 ${summary.unresolvedAssets}`,
+      `仅引用 ${summary.referenceOnlyAssets}`,
       `失败对话 ${summary.failedConversations}`
-    ].join(" · ");
+    ].join("\n");
   }
   function conversationDate(value, full = false) {
     if (value == null) return "—";
@@ -1297,7 +1355,7 @@ ${reference.kind}`;
             </div>
             <div class="cga-toolbar">
                 <select class="cga-source" aria-label="对话来源">
-                    <option value="personal">全部对话</option>
+                    <option value="all">全部对话</option>
                     <option value="archived">归档对话</option>
                 </select>
                 <span class="cga-source-loading" role="status" hidden><span class="cga-spinner" aria-hidden="true"></span>加载中</span>
@@ -1328,7 +1386,14 @@ ${reference.kind}`;
                 <button class="cga-export" type="button">导出所选</button>
                 <button class="cga-cancel" type="button" hidden>取消</button>
             </div>
-            <div class="cga-status" role="status" aria-live="polite">尚未开始</div>
+            <div class="cga-log-head">
+                <strong>运行日志</strong>
+                <div class="cga-log-actions">
+                    <button class="cga-clear-log" type="button" disabled>清空日志</button>
+                    <button class="cga-copy-log" type="button" disabled>复制日志</button>
+                </div>
+            </div>
+            <pre class="cga-status" role="log" aria-live="polite" aria-label="运行日志">尚未开始</pre>
             <progress class="cga-progress" max="1" value="0"></progress>
         </div>
     `;
@@ -1356,6 +1421,8 @@ ${reference.kind}`;
     const exportSelected = root.querySelector(".cga-export");
     const cancel = root.querySelector(".cga-cancel");
     const status = root.querySelector(".cga-status");
+    const clearLog = root.querySelector(".cga-clear-log");
+    const copyLog = root.querySelector(".cga-copy-log");
     const progress = root.querySelector(".cga-progress");
     let controller = null;
     let listController = null;
@@ -1369,6 +1436,28 @@ ${reference.kind}`;
     const selectedIds = /* @__PURE__ */ new Set();
     const sourceStates = /* @__PURE__ */ new Map();
     const recordsById = /* @__PURE__ */ new Map();
+    const auditEntries = [];
+    let activeRunId = null;
+    const renderAuditLog = () => {
+      status.textContent = auditEntries.length ? auditEntries.join("\n\n") : "尚未开始";
+      const empty = auditEntries.length === 0;
+      clearLog.disabled = empty;
+      copyLog.disabled = empty;
+      status.scrollTop = status.scrollHeight;
+    };
+    const appendAudit = (event, fields = {}, level = "INFO") => {
+      auditEntries.push(formatAuditLogEntry({
+        timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+        level,
+        event,
+        fields
+      }));
+      renderAuditLog();
+    };
+    const resetAudit = () => {
+      auditEntries.length = 0;
+      renderAuditLog();
+    };
     const setStatusTone = (tone) => {
       root.classList.toggle("cga-tone-success", tone === "success");
       root.classList.toggle("cga-tone-warning", tone === "warning");
@@ -1503,7 +1592,12 @@ ${reference.kind}`;
       loading = true;
       loadingAll = all;
       setStatusTone("neutral");
-      status.textContent = reset ? "正在读取第一页对话…" : all ? "正在加载全部对话…" : "正在加载更多对话…";
+      appendAudit("catalog.load.start", {
+        source: sourceKey,
+        mode: reset ? "first-page" : all ? "all-remaining" : "next-page",
+        offset: state.nextOffset,
+        cursor: state.nextCursor == null ? null : String(state.nextCursor)
+      });
       if (reset) renderSource();
       else {
         if (all) loadAll.textContent = "正在加载全部…";
@@ -1534,15 +1628,26 @@ ${reference.kind}`;
           state.loaded = true;
           if (project && state.hasMore && state.nextCursor != null) {
             const cursorKey = String(state.nextCursor);
-            if (seenCursors.has(cursorKey)) state.hasMore = false;
-            else seenCursors.add(cursorKey);
+            if (seenCursors.has(cursorKey)) {
+              throw new Error(`Conversation pagination repeated cursor: ${cursorKey}`);
+            }
+            seenCursors.add(cursorKey);
           }
-          const loadedText = sourceKey === "personal" && page.total != null ? `全部对话 ${state.records.length} 个 · 已扫描 ${state.nextOffset} / ${page.total}` : page.total == null ? `已加载 ${state.records.length} 个对话` : `已加载 ${state.records.length} / ${page.total} 个对话`;
-          status.textContent = all && state.hasMore ? `正在加载全部 · ${loadedText}` : loadedText;
+          appendAudit("catalog.page.loaded", {
+            source: sourceKey,
+            loaded: state.records.length,
+            scanned: state.nextOffset,
+            total: page.total,
+            hasMore: state.hasMore
+          });
         } while (all && state.hasMore);
       } catch (error) {
         if (request.signal.aborted) return;
-        status.textContent = all ? "加载全部对话失败" : "对话列表加载失败";
+        appendAudit("catalog.load.error", {
+          source: sourceKey,
+          mode: all ? "all-remaining" : reset ? "first-page" : "next-page",
+          message: error instanceof Error ? error.message : String(error)
+        }, "ERROR");
         setStatusTone("error");
         if (!state.records.length) {
           setListMessage(`加载失败：${error instanceof Error ? error.message : String(error)}`, true);
@@ -1579,17 +1684,20 @@ ${reference.kind}`;
       loading = true;
       setStatusTone("neutral");
       setListMessage("正在加载 Project 列表…");
-      status.textContent = "正在读取 Project…";
+      appendAudit("catalog.projects.load.start");
       updateSelectionState();
       try {
         projects = await fetchProjects(request.signal);
         if (request.signal.aborted) return;
         sourcesLoaded = true;
         renderProjectOptions();
+        appendAudit("catalog.projects.load.complete", { projects: projects.length });
       } catch (error) {
         if (request.signal.aborted) return;
         setListMessage(`加载失败：${error instanceof Error ? error.message : String(error)}`, true);
-        status.textContent = "Project 列表加载失败";
+        appendAudit("catalog.projects.load.error", {
+          message: error instanceof Error ? error.message : String(error)
+        }, "ERROR");
         setStatusTone("error");
         return;
       } finally {
@@ -1605,13 +1713,23 @@ ${reference.kind}`;
       const total = Math.max(value.total, 1);
       progress.max = total;
       progress.value = value.current;
-      status.textContent = `${value.title}${value.detail ? ` — ${value.detail}` : ""}${value.total ? ` (${value.current}/${value.total})` : ""}`;
+      appendAudit("archive.progress", {
+        runId: activeRunId,
+        phase: value.phase,
+        current: value.current,
+        total: value.total,
+        title: value.title,
+        detail: value.detail
+      });
     };
     const start = async () => {
       if (selectedIds.size === 0) return;
       const records = [...selectedIds].map((id) => recordsById.get(id)).filter((record) => record != null);
       if (records.length !== selectedIds.size) {
-        status.textContent = "部分勾选项已失效，请刷新列表后重选";
+        appendAudit("archive.selection.invalid", {
+          selected: selectedIds.size,
+          resolved: records.length
+        }, "ERROR");
         setStatusTone("error");
         return;
       }
@@ -1619,10 +1737,18 @@ ${reference.kind}`;
       try {
         const folder = await window.showDirectoryPicker({ id: "chatgpt-archive", mode: "readwrite" });
         controller = new AbortController();
+        activeRunId = crypto.randomUUID();
+        resetAudit();
+        appendAudit("archive.start", {
+          runId: activeRunId,
+          mode: "selected",
+          destination: folder.name,
+          selectedCount: selectedIds.size,
+          selectedConversationIds: [...selectedIds].join("\n")
+        });
         setRunning(true);
         setStatusTone("neutral");
         progress.value = 0;
-        status.textContent = "开始读取…";
         const summary = await runArchive({
           root: folder,
           mode: "selected",
@@ -1631,19 +1757,38 @@ ${reference.kind}`;
           signal: controller.signal,
           onProgress: update
         });
-        status.textContent = summaryText(summary);
         const hasErrors = summary.failedConversations > 0 || summary.failedProjects > 0 || summary.failedAssets > 0 || summary.unresolvedAssets > 0;
+        for (const itemError of summary.errors) {
+          appendAudit("archive.item.error", {
+            runId: activeRunId,
+            conversationId: itemError.conversationId,
+            title: itemError.title,
+            message: itemError.error
+          }, "ERROR");
+        }
+        appendAudit("archive.complete", {
+          runId: activeRunId,
+          summary: summaryText(summary)
+        }, hasErrors ? "ERROR" : summary.incompleteProjects > 0 ? "WARN" : "INFO");
         setStatusTone(hasErrors ? "error" : summary.incompleteProjects > 0 ? "warning" : "success");
       } catch (error) {
         if ((error == null ? void 0 : error.name) === "AbortError") {
-          status.textContent = "已取消，已写入的文件保留";
+          appendAudit("archive.cancelled", {
+            runId: activeRunId,
+            message: "已写入的文件保留"
+          }, "WARN");
           setStatusTone("warning");
         } else {
-          status.textContent = `失败：${error instanceof Error ? error.message : String(error)}`;
+          appendAudit("archive.error", {
+            runId: activeRunId,
+            message: error instanceof Error ? error.message : String(error),
+            stack: error instanceof Error ? error.stack : void 0
+          }, "ERROR");
           setStatusTone("error");
         }
       } finally {
         controller = null;
+        activeRunId = null;
         setRunning(false);
       }
     };
@@ -1684,7 +1829,23 @@ ${reference.kind}`;
           copySeparator.textContent = SEARCH_SEPARATOR;
         }, 1200);
       } catch {
-        status.textContent = `复制失败，请手动复制 ${SEARCH_SEPARATOR}`;
+        appendAudit("search.separator.copy.warning", {}, "WARN");
+        setStatusTone("warning");
+      }
+    });
+    clearLog.addEventListener("click", () => {
+      resetAudit();
+      setStatusTone("neutral");
+    });
+    copyLog.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(auditEntries.join("\n\n"));
+        copyLog.textContent = "已复制";
+        window.setTimeout(() => {
+          copyLog.textContent = "复制日志";
+        }, 1200);
+      } catch {
+        appendAudit("log.copy.warning", {}, "WARN");
         setStatusTone("warning");
       }
     });

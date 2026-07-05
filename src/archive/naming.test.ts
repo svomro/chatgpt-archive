@@ -12,6 +12,8 @@ const asset: DiscoveredAsset = {
     names: ['截屏2026-06-29 14.54.14.png'],
     mimeTypes: ['image/png'],
     expectedSizes: [554567],
+    referenceOnly: false,
+    referenceOnlyReason: null,
     references: [{
         nodeId: 'node',
         messageId: 'message',

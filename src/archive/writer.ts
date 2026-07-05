@@ -77,6 +77,29 @@ export async function existingFile(
     }
 }
 
+export async function existingFileByMarkers(
+    folder: FileSystemDirectoryHandle,
+    markers: string[],
+): Promise<File | null> {
+    const entries = (folder as FileSystemDirectoryHandle & {
+        entries?: () => AsyncIterableIterator<[string, FileSystemHandle]>
+    }).entries?.()
+    if (!entries) return null
+
+    const tokens = [...new Set(markers.filter(Boolean))].map(marker => `[${marker}]`)
+    if (!tokens.length) return null
+
+    const matches: File[] = []
+    for await (const [name, handle] of entries) {
+        if (handle.kind !== 'file' || !tokens.some(token => name.includes(token))) continue
+        matches.push(await (handle as FileSystemFileHandle).getFile())
+    }
+    if (matches.length > 1) {
+        throw new Error(`Multiple local files match attachment markers: ${markers.join(', ')}`)
+    }
+    return matches[0] ?? null
+}
+
 export async function sha256(blob: Blob): Promise<string> {
     const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer())
     return [...new Uint8Array(digest)]

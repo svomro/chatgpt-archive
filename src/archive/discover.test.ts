@@ -169,6 +169,62 @@ describe('discoverAssets', () => {
         expect(assets.every(asset => asset.directUrls[0].includes('/interpreter/download?'))).toBe(true)
     })
 
+    it('keeps files without a user upload or direct bytes as reference-only', () => {
+        const fileId = 'file-Rr1PVHG415YN75v7gBsnhf'
+        const assets = discoverAssets(conversation({
+            assistant: {
+                role: 'assistant',
+                metadata: {
+                    attachments: [{ id: fileId, name: 'context.txt', mimeType: 'text/plain' }],
+                },
+            },
+        }))
+
+        expect(assets).toHaveLength(1)
+        expect(assets[0].fileId).toBe(fileId)
+        expect(assets[0].referenceOnly).toBe(true)
+        expect(assets[0].referenceOnlyReason).toContain('No user upload record')
+    })
+
+    it('keeps a file downloadable when it has a direct URL', () => {
+        const fileId = 'file-Rr1PVHG415YN75v7gBsnhf'
+        const assets = discoverAssets(conversation({
+            assistant: {
+                role: 'assistant',
+                metadata: {
+                    attachments: [{
+                        id: fileId,
+                        name: 'context.txt',
+                        download_url: `https://files.oaiusercontent.com/files/${fileId}/download`,
+                    }],
+                },
+            },
+        }))
+
+        expect(assets).toHaveLength(1)
+        expect(assets[0].directUrls).toHaveLength(1)
+        expect(assets[0].referenceOnly).toBe(false)
+    })
+
+    it('keeps a file downloadable when the user uploaded it', () => {
+        const fileId = 'file-Rr1PVHG415YN75v7gBsnhf'
+        const assets = discoverAssets(conversation({
+            assistant: {
+                role: 'assistant',
+                metadata: { attachments: [{ id: fileId, name: 'context.txt' }] },
+            },
+            user: {
+                role: 'user',
+                metadata: { attachments: [{ id: fileId, name: 'context.txt' }] },
+            },
+        }))
+
+        expect(assets).toHaveLength(1)
+        expect(assets[0].fileId).toBe(fileId)
+        expect(assets[0].references.some(reference => reference.kind === 'user-upload')).toBe(true)
+        expect(assets[0].referenceOnly).toBe(false)
+    })
+
     it('does not mirror arbitrary external web images', () => {
         const assets = discoverAssets(conversation({
             assistant: {

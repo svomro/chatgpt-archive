@@ -30,14 +30,20 @@ vi.mock('vite-plugin-monkey/dist/client', () => ({
     },
 }))
 
-import { fetchConversationPage, fetchFileResponse, resolveFileDownload } from './api'
+import {
+    fetchConversationList,
+    fetchConversationPage,
+    fetchFileResponse,
+    fetchProjects,
+    resolveFileDownload,
+} from './api'
 
 describe('fetchConversationPage', () => {
     afterEach(() => {
         vi.unstubAllGlobals()
     })
 
-    it('loads one personal page and reports the remaining pages', async () => {
+    it('loads one all-conversations page and reports the remaining pages', async () => {
         const items = Array.from({ length: 100 }, (_, index) => ({
             id: `conversation-${index}`,
             title: `Conversation ${index}`,
@@ -64,6 +70,45 @@ describe('fetchConversationPage', () => {
         expect(page).toMatchObject({ nextOffset: 1, nextCursor: 'next-page-token', hasMore: true })
         expect(fetchMock.mock.calls[0][0]).toContain(
             '/gizmos/project-id/conversations?limit=50&cursor=current-token',
+        )
+    })
+
+    it('fails loudly when Project conversation pagination repeats a cursor', async () => {
+        const page = JSON.stringify({
+            items: [{ id: 'project-chat', title: 'Project chat', create_time: 0 }],
+            cursor: 'same-token',
+        })
+        vi.stubGlobal('fetch', vi.fn()
+            .mockResolvedValueOnce(new Response(page))
+            .mockResolvedValueOnce(new Response(page)))
+
+        await expect(fetchConversationList('project-id')).rejects.toThrow(
+            'Conversation pagination repeated cursor: same-token',
+        )
+    })
+
+    it('fails loudly when Project sidebar pagination repeats a cursor', async () => {
+        const page = JSON.stringify({
+            items: [{ id: 'project-id', name: 'Project' }],
+            cursor: 'same-token',
+        })
+        vi.stubGlobal('fetch', vi.fn()
+            .mockResolvedValueOnce(new Response(page))
+            .mockResolvedValueOnce(new Response(page)))
+
+        await expect(fetchProjects()).rejects.toThrow(
+            'Project pagination repeated cursor: same-token',
+        )
+    })
+
+    it('fails loudly when a Project sidebar item has no ID', async () => {
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+            items: [{ name: 'Broken Project' }],
+            cursor: null,
+        }))))
+
+        await expect(fetchProjects()).rejects.toThrow(
+            'Project sidebar item missing ID at index 0',
         )
     })
 })
