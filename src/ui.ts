@@ -1,7 +1,8 @@
 import { runArchive } from './archive/run'
 import type { ArchiveProgress, ArchiveSummary } from './archive/types'
 import {
-    excludeProjectConversations,
+    matchesConversationSearch,
+    SEARCH_SEPARATOR,
     sortConversationRecords,
 } from './archive/catalog'
 import type {
@@ -110,8 +111,13 @@ export function mountUi(): void {
                     <option value="archived">归档对话</option>
                 </select>
                 <span class="cga-source-loading" role="status" hidden><span class="cga-spinner" aria-hidden="true"></span>加载中</span>
-                <input class="cga-search" type="search" placeholder="搜索已加载对话" aria-label="搜索已加载对话">
+                <input class="cga-search" type="search" placeholder="搜索标题或对话 ID" aria-label="搜索标题或对话 ID">
                 <button class="cga-refresh" type="button">刷新</button>
+                <div class="cga-search-help">
+                    多项搜索用
+                    <button class="cga-copy-separator" type="button" title="复制搜索分隔符" aria-label="复制搜索分隔符"></button>
+                    分隔（匹配任一项）
+                </div>
             </div>
             <div class="cga-selection-toolbar">
                 <label><input class="cga-select-all" type="checkbox"> 全选当前列表</label>
@@ -124,7 +130,10 @@ export function mountUi(): void {
                 <button class="cga-sort cga-sort-active" type="button" data-sort="update_time">更新 ↓</button>
             </div>
             <div class="cga-selection-list"><p class="cga-list-message">打开后加载第一页对话</p></div>
-            <button class="cga-load-more" type="button" hidden>加载更多</button>
+            <div class="cga-page-actions">
+                <button class="cga-load-more" type="button" hidden>加载更多</button>
+                <button class="cga-load-all" type="button" hidden>加载全部</button>
+            </div>
             <div class="cga-actions">
                 <button class="cga-export" type="button">导出所选</button>
                 <button class="cga-cancel" type="button" hidden>取消</button>
@@ -146,12 +155,14 @@ export function mountUi(): void {
     const source = root.querySelector<HTMLSelectElement>('.cga-source')!
     const sourceLoading = root.querySelector<HTMLElement>('.cga-source-loading')!
     const search = root.querySelector<HTMLInputElement>('.cga-search')!
+    const copySeparator = root.querySelector<HTMLButtonElement>('.cga-copy-separator')!
     const selectAll = root.querySelector<HTMLInputElement>('.cga-select-all')!
     const selectedCount = root.querySelector<HTMLElement>('.cga-selected-count')!
     const sortButtons = [...root.querySelectorAll<HTMLButtonElement>('.cga-sort')]
     const refresh = root.querySelector<HTMLButtonElement>('.cga-refresh')!
     const selectionList = root.querySelector<HTMLElement>('.cga-selection-list')!
     const loadMore = root.querySelector<HTMLButtonElement>('.cga-load-more')!
+    const loadAll = root.querySelector<HTMLButtonElement>('.cga-load-all')!
     const exportSelected = root.querySelector<HTMLButtonElement>('.cga-export')!
     const cancel = root.querySelector<HTMLButtonElement>('.cga-cancel')!
     const status = root.querySelector<HTMLElement>('.cga-status')!
@@ -162,6 +173,7 @@ export function mountUi(): void {
     let sourcesLoaded = false
     let running = false
     let loading = false
+    let loadingAll = false
     let sortField: ConversationSortField = 'update_time'
     let sortDirection: ConversationSortDirection = 'desc'
     const selectedIds = new Set<string>()
@@ -219,6 +231,7 @@ export function mountUi(): void {
         search.disabled = running
         refresh.disabled = running || loading
         loadMore.disabled = running || loading
+        loadAll.disabled = running || loading
         for (const input of conversationChecks) input.disabled = running || loading
         exportSelected.disabled = running || selectedIds.size === 0
         updateSortButtons()
@@ -244,18 +257,18 @@ export function mountUi(): void {
             if (preserveScroll) selectionList.scrollTop = previousScrollTop
         }
         const state = currentSourceState()
-        const query = search.value.trim().toLocaleLowerCase()
         const records = sortConversationRecords(
-            (state?.records ?? []).filter(record => !query
-                || record.item.title.toLocaleLowerCase().includes(query)),
+            (state?.records ?? []).filter(record => matchesConversationSearch(record.item, search.value)),
             sortField,
             sortDirection,
         )
         const remaining = state?.total == null ? null : Math.max(state.total - state.nextOffset, 0)
         loadMore.hidden = !state?.hasMore
-        loadMore.textContent = loading
+        loadAll.hidden = !state?.hasMore
+        loadMore.textContent = loading && !loadingAll
             ? '正在加载…'
             : remaining == null ? '加载更多' : `加载更多 · 剩余 ${remaining}`
+        loadAll.textContent = loadingAll ? '正在加载全部…' : '加载全部'
         selectionList.replaceChildren()
         if (loading && !state?.records.length) {
             setListMessage('正在加载第一页对话…')
@@ -264,7 +277,7 @@ export function mountUi(): void {
             return
         }
         if (!records.length) {
-            setListMessage(query ? '已加载的对话中没有匹配项' : '这个来源没有对话')
+            setListMessage(search.value.trim() ? '已加载的对话中没有匹配项' : '这个来源没有对话')
             updateSelectionState()
             restoreScroll()
             return
@@ -304,7 +317,7 @@ export function mountUi(): void {
         restoreScroll()
     }
 
-    const loadPage = async (reset: boolean) => {
+    const loadPage = async (reset: boolean, all = false) => {
         listController?.abort()
         const request = new AbortController()
         listController = request
@@ -313,42 +326,58 @@ export function mountUi(): void {
         const state = reset ? emptySourceState() : (sourceStates.get(sourceKey) ?? emptySourceState())
         if (reset) sourceStates.set(sourceKey, state)
         loading = true
+        loadingAll = all
         setStatusTone('neutral')
-        status.textContent = reset ? '正在读取第一页对话…' : '正在加载更多对话…'
+        status.textContent = reset
+            ? '正在读取第一页对话…'
+            : all ? '正在加载全部对话…' : '正在加载更多对话…'
         if (reset) renderSource()
         else {
-            loadMore.textContent = '正在加载…'
+            if (all) loadAll.textContent = '正在加载全部…'
+            else loadMore.textContent = '正在加载…'
             updateSelectionState()
         }
         try {
-            const page = await fetchConversationPage(project?.id ?? null, request.signal, {
-                archived: sourceKey === ARCHIVED_SOURCE,
-                offset: state.nextOffset,
-                cursor: state.nextCursor,
-            })
-            if (request.signal.aborted) return
             const byId = new Map(state.records.map(record => [record.item.id, record]))
-            const visibleItems = page.items
-            for (const item of visibleItems) {
-                const record = { item, project }
-                byId.set(item.id, record)
-                recordsById.set(item.id, record)
+            const seenCursors = new Set<string>()
+            if (project && state.nextCursor != null) seenCursors.add(String(state.nextCursor))
+            do {
+                const page = await fetchConversationPage(project?.id ?? null, request.signal, {
+                    archived: sourceKey === ARCHIVED_SOURCE,
+                    offset: state.nextOffset,
+                    cursor: state.nextCursor,
+                })
+                if (request.signal.aborted) return
+                for (const item of page.items) {
+                    const record = { item, project }
+                    byId.set(item.id, record)
+                    recordsById.set(item.id, record)
+                }
+                state.records = [...byId.values()]
+                state.nextOffset = page.nextOffset
+                state.nextCursor = page.nextCursor
+                state.total = page.total
+                state.hasMore = page.hasMore
+                state.loaded = true
+
+                if (project && state.hasMore && state.nextCursor != null) {
+                    const cursorKey = String(state.nextCursor)
+                    if (seenCursors.has(cursorKey)) state.hasMore = false
+                    else seenCursors.add(cursorKey)
+                }
+
+                const loadedText = sourceKey === 'personal' && page.total != null
+                    ? `全部对话 ${state.records.length} 个 · 已扫描 ${state.nextOffset} / ${page.total}`
+                    : page.total == null
+                    ? `已加载 ${state.records.length} 个对话`
+                    : `已加载 ${state.records.length} / ${page.total} 个对话`
+                status.textContent = all && state.hasMore ? `正在加载全部 · ${loadedText}` : loadedText
             }
-            state.records = [...byId.values()]
-            state.nextOffset = page.nextOffset
-            state.nextCursor = page.nextCursor
-            state.total = page.total
-            state.hasMore = page.hasMore
-            state.loaded = true
-            status.textContent = sourceKey === 'personal' && page.total != null
-                ? `全部对话 ${state.records.length} 个 · 已扫描 ${state.nextOffset} / ${page.total}`
-                : page.total == null
-                ? `已加载 ${state.records.length} 个对话`
-                : `已加载 ${state.records.length} / ${page.total} 个对话`
+            while (all && state.hasMore)
         }
         catch (error) {
             if (request.signal.aborted) return
-            status.textContent = '对话列表加载失败'
+            status.textContent = all ? '加载全部对话失败' : '对话列表加载失败'
             setStatusTone('error')
             if (!state.records.length) {
                 setListMessage(`加载失败：${error instanceof Error ? error.message : String(error)}`, true)
@@ -358,6 +387,7 @@ export function mountUi(): void {
             if (listController === request) {
                 listController = null
                 loading = false
+                loadingAll = false
                 renderSource(!reset)
             }
         }
@@ -496,11 +526,23 @@ export function mountUi(): void {
         else void loadPage(true)
     })
     search.addEventListener('input', () => { renderSource() })
+    copySeparator.addEventListener('click', async () => {
+        try {
+            await navigator.clipboard.writeText(SEARCH_SEPARATOR)
+            copySeparator.textContent = `已复制 ${SEARCH_SEPARATOR}`
+            window.setTimeout(() => { copySeparator.textContent = SEARCH_SEPARATOR }, 1200)
+        }
+        catch {
+            status.textContent = `复制失败，请手动复制 ${SEARCH_SEPARATOR}`
+            setStatusTone('warning')
+        }
+    })
     refresh.addEventListener('click', () => {
         if (sourcesLoaded) void loadPage(true)
         else void initializeSources()
     })
     loadMore.addEventListener('click', () => { void loadPage(false) })
+    loadAll.addEventListener('click', () => { void loadPage(false, true) })
     selectAll.addEventListener('change', () => {
         for (const input of selectionList.querySelectorAll<HTMLInputElement>('.cga-conversation-check')) {
             input.checked = selectAll.checked

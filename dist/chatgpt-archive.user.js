@@ -13,7 +13,7 @@
 // @run-at       document-end
 // ==/UserScript==
 
-(a=>{if(typeof GM_addStyle=="function"){GM_addStyle(a);return}const o=document.createElement("style");o.textContent=a,document.head.append(o)})(" #chatgpt-archive-root{position:relative;z-index:2147483647;display:flex;flex:0 0 auto;align-items:center;color:inherit;font:13px/1.45 ui-sans-serif,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif}#chatgpt-archive-root[data-docked=false]{display:none}#chatgpt-archive-root button{border:0;border-radius:9px;cursor:pointer;font:inherit}#chatgpt-archive-root button:disabled{cursor:not-allowed;opacity:.45}.cga-launch{position:relative;display:inline-flex;width:36px;height:36px;align-items:center;justify-content:center;padding:0;background:transparent;color:inherit}.cga-launch:hover,.cga-launch:focus-visible{background:var(--token-interactive-bg-secondary-hover, rgb(0 0 0 / .08));color:var(--text-primary, #0d0d0d)}.cga-launch svg{display:block}.cga-launch:after{position:absolute;bottom:calc(100% + 8px);left:50%;z-index:2147483647;padding:5px 8px;border-radius:6px;background:#171717;color:#fff;content:attr(data-tooltip);font-size:12px;line-height:1;opacity:0;pointer-events:none;transform:translate(-50%) translateY(3px);transition:opacity .12s ease,transform .12s ease;white-space:nowrap}.cga-launch:hover:after,.cga-launch:focus-visible:after{opacity:1;transform:translate(-50%) translateY(0)}.cga-panel{position:fixed;bottom:72px;left:8px;z-index:2147483647;width:min(520px,calc(100vw - 16px));max-height:calc(100vh - 88px);padding:16px;border:1px solid #d1d5db;border-radius:14px;background:#fff;color:#1f2937;box-shadow:0 15px 45px #0003}.cga-head,.cga-toolbar,.cga-selection-toolbar,.cga-actions{display:flex;align-items:center;gap:8px}.cga-head{justify-content:space-between}.cga-head strong{font-size:15px}.cga-toolbar{flex-wrap:wrap;margin-top:12px;padding:8px 0;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb}.cga-source,.cga-search{min-width:0;padding:6px 8px;border:1px solid #d1d5db;border-radius:7px;background:#fff;color:inherit;font:inherit}.cga-source{max-width:210px}.cga-source-loading{display:inline-flex;align-items:center;gap:5px;color:#6b7280;font-size:12px;white-space:nowrap}.cga-source-loading[hidden]{display:none}.cga-spinner{width:13px;height:13px;border:2px solid #d1d5db;border-top-color:#10a37f;border-radius:50%;animation:cga-spin .7s linear infinite}@keyframes cga-spin{to{transform:rotate(360deg)}}.cga-search{flex:1 1 160px}.cga-selection-toolbar{padding:8px 2px}.cga-selection-toolbar label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}.cga-selected-count{margin-left:auto;color:#6b7280}.cga-refresh{margin-left:auto;padding:5px 9px;background:#e5e7eb;color:#111827}.cga-list-header,.cga-conversation{display:grid;min-width:0;grid-template-columns:15px minmax(0,1fr) 76px 76px;align-items:center;gap:9px}.cga-list-header{padding:5px 8px;color:#6b7280;font-size:11px}.cga-list-header button{overflow:hidden;padding:2px 0;background:transparent;color:inherit;font-size:inherit;text-align:left;text-overflow:ellipsis;white-space:nowrap}.cga-list-header .cga-sort-active{color:#047857;font-weight:600}.cga-selection-list{max-height:min(52vh,520px);overflow:auto;overscroll-behavior:contain;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb}.cga-list-message{margin:18px 0;color:#6b7280;text-align:center}.cga-list-error{color:#b91c1c}.cga-conversation{padding:7px 8px;border-radius:8px;cursor:pointer}.cga-conversation:hover{background:#f3f4f6}.cga-conversation-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cga-conversation-date{overflow:hidden;color:#6b7280;font-size:10.5px;text-overflow:ellipsis;white-space:nowrap}.cga-conversation-date.cga-date-active{color:#047857}.cga-selection-toolbar input,.cga-conversation input{width:15px;height:15px;flex:0 0 auto;accent-color:#10a37f}.cga-load-more{display:block;margin:10px auto 0;padding:6px 12px;background:#e5e7eb;color:#111827}.cga-load-more[hidden]{display:none}.cga-close{width:28px;height:28px;background:transparent;color:inherit;font-size:20px!important}.cga-actions{flex-wrap:wrap;margin:12px 0}.cga-actions button{padding:7px 10px;background:#e5e7eb;color:#111827}.cga-actions .cga-export{background:#10a37f;color:#fff}.cga-actions .cga-cancel{background:#fee2e2;color:#991b1b}.cga-status{max-height:90px;overflow:auto;word-break:break-word}.cga-progress{width:100%;margin-top:9px}.cga-tone-success .cga-status{color:#15803d}.cga-tone-warning .cga-status{color:#b45309}.cga-tone-error .cga-status{color:#b91c1c}@media(prefers-color-scheme:dark){.cga-panel{border-color:#4b5563;background:#202123;color:#e5e7eb}.cga-toolbar,.cga-selection-list{border-color:#374151}.cga-source,.cga-search{border-color:#4b5563;background:#202123;color:#e5e7eb}.cga-selected-count,.cga-source-loading,.cga-list-message,.cga-conversation-date,.cga-list-header{color:#9ca3af}.cga-list-header .cga-sort-active,.cga-conversation-date.cga-date-active{color:#34d399}.cga-list-error{color:#f87171}.cga-conversation:hover{background:#2f3033}.cga-refresh,.cga-load-more,.cga-actions button{background:#374151;color:#f9fafb}.cga-actions .cga-export{background:#10a37f;color:#fff}.cga-tone-success .cga-status{color:#4ade80}.cga-tone-warning .cga-status{color:#fbbf24}.cga-tone-error .cga-status{color:#f87171}} ");
+(e=>{if(typeof GM_addStyle=="function"){GM_addStyle(e);return}const a=document.createElement("style");a.textContent=e,document.head.append(a)})(" #chatgpt-archive-root{position:relative;z-index:2147483647;display:flex;flex:0 0 auto;align-items:center;color:inherit;font:13px/1.45 ui-sans-serif,-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif}#chatgpt-archive-root[data-docked=false]{display:none}#chatgpt-archive-root button{border:0;border-radius:9px;cursor:pointer;font:inherit}#chatgpt-archive-root button:disabled{cursor:not-allowed;opacity:.45}.cga-launch{position:relative;display:inline-flex;width:36px;height:36px;align-items:center;justify-content:center;padding:0;background:transparent;color:inherit}.cga-launch:hover,.cga-launch:focus-visible{background:var(--token-interactive-bg-secondary-hover, rgb(0 0 0 / .08));color:var(--text-primary, #0d0d0d)}.cga-launch svg{display:block}.cga-launch:after{position:absolute;bottom:calc(100% + 8px);left:50%;z-index:2147483647;padding:5px 8px;border-radius:6px;background:#171717;color:#fff;content:attr(data-tooltip);font-size:12px;line-height:1;opacity:0;pointer-events:none;transform:translate(-50%) translateY(3px);transition:opacity .12s ease,transform .12s ease;white-space:nowrap}.cga-launch:hover:after,.cga-launch:focus-visible:after{opacity:1;transform:translate(-50%) translateY(0)}.cga-panel{position:fixed;bottom:72px;left:8px;z-index:2147483647;width:min(520px,calc(100vw - 16px));max-height:calc(100vh - 88px);padding:16px;border:1px solid #d1d5db;border-radius:14px;background:#fff;color:#1f2937;box-shadow:0 15px 45px #0003}.cga-head,.cga-toolbar,.cga-selection-toolbar,.cga-actions{display:flex;align-items:center;gap:8px}.cga-head{justify-content:space-between}.cga-head strong{font-size:15px}.cga-toolbar{flex-wrap:wrap;margin-top:12px;padding:8px 0;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb}.cga-source,.cga-search{min-width:0;padding:6px 8px;border:1px solid #d1d5db;border-radius:7px;background:#fff;color:inherit;font:inherit}.cga-source{max-width:210px}.cga-source-loading{display:inline-flex;align-items:center;gap:5px;color:#6b7280;font-size:12px;white-space:nowrap}.cga-source-loading[hidden]{display:none}.cga-spinner{width:13px;height:13px;border:2px solid #d1d5db;border-top-color:#10a37f;border-radius:50%;animation:cga-spin .7s linear infinite}@keyframes cga-spin{to{transform:rotate(360deg)}}.cga-search{flex:1 1 160px}.cga-search-help{display:flex;flex:1 0 100%;align-items:center;gap:5px;color:#6b7280;font-size:11px}.cga-copy-separator{padding:2px 7px;background:#e5e7eb;color:#111827;font-weight:600;-webkit-user-select:all;user-select:all}.cga-selection-toolbar{padding:8px 2px}.cga-selection-toolbar label{display:inline-flex;align-items:center;gap:6px;cursor:pointer}.cga-selected-count{margin-left:auto;color:#6b7280}.cga-refresh{margin-left:auto;padding:5px 9px;background:#e5e7eb;color:#111827}.cga-list-header,.cga-conversation{display:grid;min-width:0;grid-template-columns:15px minmax(0,1fr) 76px 76px;align-items:center;gap:9px}.cga-list-header{padding:5px 8px;color:#6b7280;font-size:11px}.cga-list-header button{overflow:hidden;padding:2px 0;background:transparent;color:inherit;font-size:inherit;text-align:left;text-overflow:ellipsis;white-space:nowrap}.cga-list-header .cga-sort-active{color:#047857;font-weight:600}.cga-selection-list{max-height:min(52vh,520px);overflow:auto;overscroll-behavior:contain;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb}.cga-list-message{margin:18px 0;color:#6b7280;text-align:center}.cga-list-error{color:#b91c1c}.cga-conversation{padding:7px 8px;border-radius:8px;cursor:pointer}.cga-conversation:hover{background:#f3f4f6}.cga-conversation-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.cga-conversation-date{overflow:hidden;color:#6b7280;font-size:10.5px;text-overflow:ellipsis;white-space:nowrap}.cga-conversation-date.cga-date-active{color:#047857}.cga-selection-toolbar input,.cga-conversation input{width:15px;height:15px;flex:0 0 auto;accent-color:#10a37f}.cga-page-actions{display:flex;justify-content:center;gap:8px;margin-top:10px}.cga-page-actions button{padding:6px 12px;background:#e5e7eb;color:#111827}.cga-page-actions button[hidden]{display:none}.cga-close{width:28px;height:28px;background:transparent;color:inherit;font-size:20px!important}.cga-actions{flex-wrap:wrap;margin:12px 0}.cga-actions button{padding:7px 10px;background:#e5e7eb;color:#111827}.cga-actions .cga-export{background:#10a37f;color:#fff}.cga-actions .cga-cancel{background:#fee2e2;color:#991b1b}.cga-status{max-height:90px;overflow:auto;word-break:break-word}.cga-progress{width:100%;margin-top:9px}.cga-tone-success .cga-status{color:#15803d}.cga-tone-warning .cga-status{color:#b45309}.cga-tone-error .cga-status{color:#b91c1c}@media(prefers-color-scheme:dark){.cga-panel{border-color:#4b5563;background:#202123;color:#e5e7eb}.cga-toolbar,.cga-selection-list{border-color:#374151}.cga-source,.cga-search{border-color:#4b5563;background:#202123;color:#e5e7eb}.cga-selected-count,.cga-source-loading,.cga-search-help,.cga-list-message,.cga-conversation-date,.cga-list-header{color:#9ca3af}.cga-list-header .cga-sort-active,.cga-conversation-date.cga-date-active{color:#34d399}.cga-list-error{color:#f87171}.cga-conversation:hover{background:#2f3033}.cga-refresh,.cga-copy-separator,.cga-page-actions button,.cga-actions button{background:#374151;color:#f9fafb}.cga-actions .cga-export{background:#10a37f;color:#fff}.cga-tone-success .cga-status{color:#4ade80}.cga-tone-warning .cga-status{color:#fbbf24}.cga-tone-error .cga-status{color:#f87171}} ");
 
 (function () {
   'use strict';
@@ -290,6 +290,7 @@
     }
     return response;
   }
+  const SEARCH_SEPARATOR = "";
   function timeValue(value) {
     if (typeof value === "number") return value * 1e3;
     if (typeof value === "string") return Date.parse(value) || 0;
@@ -303,6 +304,13 @@
       }
       return multiplier * (timeValue(field === "update_time" ? left.item.update_time : left.item.create_time) - timeValue(field === "update_time" ? right.item.update_time : right.item.create_time));
     });
+  }
+  function matchesConversationSearch(item, query) {
+    const terms = query.split(SEARCH_SEPARATOR).map((term) => term.trim().toLocaleLowerCase()).filter(Boolean);
+    if (!terms.length) return true;
+    const title = item.title.toLocaleLowerCase();
+    const id = item.id.toLocaleLowerCase();
+    return terms.some((term) => title.includes(term) || id.includes(term));
   }
   function selectConversationRecords(records, selectedIds) {
     const selected = new Set(selectedIds);
@@ -1293,8 +1301,13 @@ ${reference.kind}`;
                     <option value="archived">归档对话</option>
                 </select>
                 <span class="cga-source-loading" role="status" hidden><span class="cga-spinner" aria-hidden="true"></span>加载中</span>
-                <input class="cga-search" type="search" placeholder="搜索已加载对话" aria-label="搜索已加载对话">
+                <input class="cga-search" type="search" placeholder="搜索标题或对话 ID" aria-label="搜索标题或对话 ID">
                 <button class="cga-refresh" type="button">刷新</button>
+                <div class="cga-search-help">
+                    多项搜索用
+                    <button class="cga-copy-separator" type="button" title="复制搜索分隔符" aria-label="复制搜索分隔符"></button>
+                    分隔（匹配任一项）
+                </div>
             </div>
             <div class="cga-selection-toolbar">
                 <label><input class="cga-select-all" type="checkbox"> 全选当前列表</label>
@@ -1307,7 +1320,10 @@ ${reference.kind}`;
                 <button class="cga-sort cga-sort-active" type="button" data-sort="update_time">更新 ↓</button>
             </div>
             <div class="cga-selection-list"><p class="cga-list-message">打开后加载第一页对话</p></div>
-            <button class="cga-load-more" type="button" hidden>加载更多</button>
+            <div class="cga-page-actions">
+                <button class="cga-load-more" type="button" hidden>加载更多</button>
+                <button class="cga-load-all" type="button" hidden>加载全部</button>
+            </div>
             <div class="cga-actions">
                 <button class="cga-export" type="button">导出所选</button>
                 <button class="cga-cancel" type="button" hidden>取消</button>
@@ -1329,12 +1345,14 @@ ${reference.kind}`;
     const source = root.querySelector(".cga-source");
     const sourceLoading = root.querySelector(".cga-source-loading");
     const search = root.querySelector(".cga-search");
+    const copySeparator = root.querySelector(".cga-copy-separator");
     const selectAll = root.querySelector(".cga-select-all");
     const selectedCount = root.querySelector(".cga-selected-count");
     const sortButtons = [...root.querySelectorAll(".cga-sort")];
     const refresh = root.querySelector(".cga-refresh");
     const selectionList = root.querySelector(".cga-selection-list");
     const loadMore = root.querySelector(".cga-load-more");
+    const loadAll = root.querySelector(".cga-load-all");
     const exportSelected = root.querySelector(".cga-export");
     const cancel = root.querySelector(".cga-cancel");
     const status = root.querySelector(".cga-status");
@@ -1345,6 +1363,7 @@ ${reference.kind}`;
     let sourcesLoaded = false;
     let running = false;
     let loading = false;
+    let loadingAll = false;
     let sortField = "update_time";
     let sortDirection = "desc";
     const selectedIds = /* @__PURE__ */ new Set();
@@ -1396,6 +1415,7 @@ ${reference.kind}`;
       search.disabled = running;
       refresh.disabled = running || loading;
       loadMore.disabled = running || loading;
+      loadAll.disabled = running || loading;
       for (const input of conversationChecks) input.disabled = running || loading;
       exportSelected.disabled = running || selectedIds.size === 0;
       updateSortButtons();
@@ -1418,15 +1438,16 @@ ${reference.kind}`;
         if (preserveScroll) selectionList.scrollTop = previousScrollTop;
       };
       const state = currentSourceState();
-      const query = search.value.trim().toLocaleLowerCase();
       const records = sortConversationRecords(
-        ((state == null ? void 0 : state.records) ?? []).filter((record) => !query || record.item.title.toLocaleLowerCase().includes(query)),
+        ((state == null ? void 0 : state.records) ?? []).filter((record) => matchesConversationSearch(record.item, search.value)),
         sortField,
         sortDirection
       );
       const remaining = (state == null ? void 0 : state.total) == null ? null : Math.max(state.total - state.nextOffset, 0);
       loadMore.hidden = !(state == null ? void 0 : state.hasMore);
-      loadMore.textContent = loading ? "正在加载…" : remaining == null ? "加载更多" : `加载更多 · 剩余 ${remaining}`;
+      loadAll.hidden = !(state == null ? void 0 : state.hasMore);
+      loadMore.textContent = loading && !loadingAll ? "正在加载…" : remaining == null ? "加载更多" : `加载更多 · 剩余 ${remaining}`;
+      loadAll.textContent = loadingAll ? "正在加载全部…" : "加载全部";
       selectionList.replaceChildren();
       if (loading && !(state == null ? void 0 : state.records.length)) {
         setListMessage("正在加载第一页对话…");
@@ -1435,7 +1456,7 @@ ${reference.kind}`;
         return;
       }
       if (!records.length) {
-        setListMessage(query ? "已加载的对话中没有匹配项" : "这个来源没有对话");
+        setListMessage(search.value.trim() ? "已加载的对话中没有匹配项" : "这个来源没有对话");
         updateSelectionState();
         restoreScroll();
         return;
@@ -1471,7 +1492,7 @@ ${reference.kind}`;
       updateSelectionState();
       restoreScroll();
     };
-    const loadPage = async (reset) => {
+    const loadPage = async (reset, all = false) => {
       listController == null ? void 0 : listController.abort();
       const request = new AbortController();
       listController = request;
@@ -1480,37 +1501,48 @@ ${reference.kind}`;
       const state = reset ? emptySourceState() : sourceStates.get(sourceKey) ?? emptySourceState();
       if (reset) sourceStates.set(sourceKey, state);
       loading = true;
+      loadingAll = all;
       setStatusTone("neutral");
-      status.textContent = reset ? "正在读取第一页对话…" : "正在加载更多对话…";
+      status.textContent = reset ? "正在读取第一页对话…" : all ? "正在加载全部对话…" : "正在加载更多对话…";
       if (reset) renderSource();
       else {
-        loadMore.textContent = "正在加载…";
+        if (all) loadAll.textContent = "正在加载全部…";
+        else loadMore.textContent = "正在加载…";
         updateSelectionState();
       }
       try {
-        const page = await fetchConversationPage((project == null ? void 0 : project.id) ?? null, request.signal, {
-          archived: sourceKey === ARCHIVED_SOURCE,
-          offset: state.nextOffset,
-          cursor: state.nextCursor
-        });
-        if (request.signal.aborted) return;
         const byId = new Map(state.records.map((record) => [record.item.id, record]));
-        const visibleItems = page.items;
-        for (const item of visibleItems) {
-          const record = { item, project };
-          byId.set(item.id, record);
-          recordsById.set(item.id, record);
-        }
-        state.records = [...byId.values()];
-        state.nextOffset = page.nextOffset;
-        state.nextCursor = page.nextCursor;
-        state.total = page.total;
-        state.hasMore = page.hasMore;
-        state.loaded = true;
-        status.textContent = sourceKey === "personal" && page.total != null ? `全部对话 ${state.records.length} 个 · 已扫描 ${state.nextOffset} / ${page.total}` : page.total == null ? `已加载 ${state.records.length} 个对话` : `已加载 ${state.records.length} / ${page.total} 个对话`;
+        const seenCursors = /* @__PURE__ */ new Set();
+        if (project && state.nextCursor != null) seenCursors.add(String(state.nextCursor));
+        do {
+          const page = await fetchConversationPage((project == null ? void 0 : project.id) ?? null, request.signal, {
+            archived: sourceKey === ARCHIVED_SOURCE,
+            offset: state.nextOffset,
+            cursor: state.nextCursor
+          });
+          if (request.signal.aborted) return;
+          for (const item of page.items) {
+            const record = { item, project };
+            byId.set(item.id, record);
+            recordsById.set(item.id, record);
+          }
+          state.records = [...byId.values()];
+          state.nextOffset = page.nextOffset;
+          state.nextCursor = page.nextCursor;
+          state.total = page.total;
+          state.hasMore = page.hasMore;
+          state.loaded = true;
+          if (project && state.hasMore && state.nextCursor != null) {
+            const cursorKey = String(state.nextCursor);
+            if (seenCursors.has(cursorKey)) state.hasMore = false;
+            else seenCursors.add(cursorKey);
+          }
+          const loadedText = sourceKey === "personal" && page.total != null ? `全部对话 ${state.records.length} 个 · 已扫描 ${state.nextOffset} / ${page.total}` : page.total == null ? `已加载 ${state.records.length} 个对话` : `已加载 ${state.records.length} / ${page.total} 个对话`;
+          status.textContent = all && state.hasMore ? `正在加载全部 · ${loadedText}` : loadedText;
+        } while (all && state.hasMore);
       } catch (error) {
         if (request.signal.aborted) return;
-        status.textContent = "对话列表加载失败";
+        status.textContent = all ? "加载全部对话失败" : "对话列表加载失败";
         setStatusTone("error");
         if (!state.records.length) {
           setListMessage(`加载失败：${error instanceof Error ? error.message : String(error)}`, true);
@@ -1519,6 +1551,7 @@ ${reference.kind}`;
         if (listController === request) {
           listController = null;
           loading = false;
+          loadingAll = false;
           renderSource(!reset);
         }
       }
@@ -1643,12 +1676,27 @@ ${reference.kind}`;
     search.addEventListener("input", () => {
       renderSource();
     });
+    copySeparator.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(SEARCH_SEPARATOR);
+        copySeparator.textContent = `已复制 ${SEARCH_SEPARATOR}`;
+        window.setTimeout(() => {
+          copySeparator.textContent = SEARCH_SEPARATOR;
+        }, 1200);
+      } catch {
+        status.textContent = `复制失败，请手动复制 ${SEARCH_SEPARATOR}`;
+        setStatusTone("warning");
+      }
+    });
     refresh.addEventListener("click", () => {
       if (sourcesLoaded) void loadPage(true);
       else void initializeSources();
     });
     loadMore.addEventListener("click", () => {
       void loadPage(false);
+    });
+    loadAll.addEventListener("click", () => {
+      void loadPage(false, true);
     });
     selectAll.addEventListener("change", () => {
       for (const input of selectionList.querySelectorAll(".cga-conversation-check")) {

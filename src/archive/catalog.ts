@@ -1,24 +1,16 @@
 import type {
     ConversationListItem,
     ConversationRecord,
-    ProjectRecord,
 } from '../chatgpt/types'
 
 export type ConversationSortField = 'title' | 'create_time' | 'update_time'
 export type ConversationSortDirection = 'asc' | 'desc'
+export const SEARCH_SEPARATOR = ''
 
 function timeValue(value: number | string | undefined): number {
     if (typeof value === 'number') return value * 1000
     if (typeof value === 'string') return Date.parse(value) || 0
     return 0
-}
-
-export function excludeProjectConversations(
-    items: ConversationListItem[],
-    projects: ProjectRecord[],
-): ConversationListItem[] {
-    const projectIds = new Set(projects.map(project => project.id))
-    return items.filter(item => !item.gizmo_id || !projectIds.has(item.gizmo_id))
 }
 
 export function sortConversationRecords(
@@ -36,6 +28,20 @@ export function sortConversationRecords(
             - timeValue(field === 'update_time' ? right.item.update_time : right.item.create_time)
         )
     })
+}
+
+export function matchesConversationSearch(
+    item: ConversationListItem,
+    query: string,
+): boolean {
+    const terms = query
+        .split(SEARCH_SEPARATOR)
+        .map(term => term.trim().toLocaleLowerCase())
+        .filter(Boolean)
+    if (!terms.length) return true
+    const title = item.title.toLocaleLowerCase()
+    const id = item.id.toLocaleLowerCase()
+    return terms.some(term => title.includes(term) || id.includes(term))
 }
 
 export function selectConversationRecords(

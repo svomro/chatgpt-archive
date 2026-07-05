@@ -156,6 +156,23 @@
     flex: 1 1 160px;
 }
 
+.cga-search-help {
+    display: flex;
+    flex: 1 0 100%;
+    align-items: center;
+    gap: 5px;
+    color: #6b7280;
+    font-size: 11px;
+}
+
+.cga-copy-separator {
+    padding: 2px 7px;
+    background: #e5e7eb;
+    color: #111827;
+    font-weight: 600;
+    user-select: all;
+}
+
 .cga-selection-toolbar {
     padding: 8px 2px;
 }
@@ -264,15 +281,20 @@
     accent-color: #10a37f;
 }
 
-.cga-load-more {
-    display: block;
-    margin: 10px auto 0;
+.cga-page-actions {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.cga-page-actions button {
     padding: 6px 12px;
     background: #e5e7eb;
     color: #111827;
 }
 
-.cga-load-more[hidden] {
+.cga-page-actions button[hidden] {
     display: none;
 }
 
@@ -332,11 +354,11 @@
     .cga-panel { border-color: #4b5563; background: #202123; color: #e5e7eb; }
     .cga-toolbar, .cga-selection-list { border-color: #374151; }
     .cga-source, .cga-search { border-color: #4b5563; background: #202123; color: #e5e7eb; }
-    .cga-selected-count, .cga-source-loading, .cga-list-message, .cga-conversation-date, .cga-list-header { color: #9ca3af; }
+    .cga-selected-count, .cga-source-loading, .cga-search-help, .cga-list-message, .cga-conversation-date, .cga-list-header { color: #9ca3af; }
     .cga-list-header .cga-sort-active, .cga-conversation-date.cga-date-active { color: #34d399; }
     .cga-list-error { color: #f87171; }
     .cga-conversation:hover { background: #2f3033; }
-    .cga-refresh, .cga-load-more { background: #374151; color: #f9fafb; }
+    .cga-refresh, .cga-copy-separator, .cga-page-actions button { background: #374151; color: #f9fafb; }
     .cga-actions button { background: #374151; color: #f9fafb; }
     .cga-actions .cga-export { background: #10a37f; color: #fff; }
     .cga-tone-success .cga-status { color: #4ade80; }
