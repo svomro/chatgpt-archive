@@ -3,7 +3,10 @@ import type { AssetKind, AssetReference, DiscoveredAsset } from './types'
 
 const FILE_ID_RE = /(?<![A-Za-z0-9])(?:file_[A-Za-z0-9]{16,}|file-(?!service\b)[A-Za-z0-9]{16,})/gi
 const LIBRARY_ID_RE = /libfile_[A-Za-z0-9]{16,}/gi
-const POINTER_RE = /(?:sediment|file-service):\/\/[^\s\])}"']+/gi
+// Require a real file id right after the scheme. Model-produced strings such as
+// `sediment://${fileId}` were slipping through and inflating the reference-only
+// count with template placeholders.
+const POINTER_RE = /(?:sediment|file-service):\/\/(?=file[_-]|libfile_)[^\s\])}"'$]+/gi
 const MY_FILES_RE = /file:\/\/my_files\/[^\s\])}"']+/gi
 const SANDBOX_RE = /sandbox:\/[^\s\])}"']+/gi
 const DATA_IMAGE_RE = /data:image\/[A-Za-z0-9.+-]+;base64,[A-Za-z0-9+/=\s]+/gi
@@ -230,6 +233,22 @@ export function discoverAssets(conversation: RawConversation): DiscoveredAsset[]
             aliasToKey.set(id, asset.key)
             aliasToKey.set(`file:${id}`, asset.key)
         }
+        // container.open_image tool messages record the interpreter path as
+        // `name`. The file-service resolver frequently 404s on these; keep an
+        // interpreter/download URL so the file can still be fetched.
+        const rawName = typeof attachment.name === 'string' ? attachment.name : ''
+        const sandboxMatch = rawName.match(/\/mnt\/data\/[^?#]+/)
+        if (sandboxMatch && conversationId && context.messageId) {
+            const sandboxPath = sandboxMatch[0]
+            const params = new URLSearchParams({
+                message_id: context.messageId,
+                sandbox_path: sandboxPath,
+            })
+            asset.directUrlSet.add(
+                `/backend-api/conversation/${encodeURIComponent(conversationId)}/interpreter/download?${params}`,
+            )
+            asset.sandboxPathSet.add(`sandbox:${sandboxPath}`)
+        }
     }
 
     const scanString = (value: string, path: string, context: MessageContext, hints: Hints) => {
@@ -347,13 +366,17 @@ export function discoverAssets(conversation: RawConversation): DiscoveredAsset[]
     }
 
     return [...assets.values()].map((asset) => {
-        const hasUserUpload = asset.references.some(reference => reference.kind === 'user-upload')
-        const hasIndependentBytes = asset.directUrlSet.size > 0
+        // A fileId is enough to try the files-download resolver; withholding
+        // download solely because there is no user-upload record misses Project
+        // Sources and container.open_image outputs. Real dead references keep
+        // showing up as reference-only because they have no fileId at all.
+        const hasIndependentBytes = asset.fileId != null
+            || asset.directUrlSet.size > 0
             || asset.sandboxPathSet.size > 0
             || asset.inlineDataUrl != null
-        const referenceOnly = !hasUserUpload && !hasIndependentBytes
+        const referenceOnly = !hasIndependentBytes
         const referenceOnlyReason = referenceOnly
-            ? 'No user upload record and no direct URL, sandbox file, or inline data'
+            ? 'No fileId, direct URL, sandbox file, or inline data attached to this reference'
             : null
         return {
             key: asset.key,

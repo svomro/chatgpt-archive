@@ -44,6 +44,8 @@ ChatGPT/
 
 Raw JSON is never rewritten with data URIs or local paths. `attachments-manifest.json` maps original references to local files.
 
+Structural Reference：`f14XuanLv/Claude-Powerest-Manager_Enhancer`
+
 ## Current limitation
 
 ChatGPT exposes a separate **Sources** collection on Project pages. The current account's inspected Project had no Sources, so its populated API response shape is still unknown. `project.json` is preserved and recursively scanned, but every `project-attachments-manifest.json` carries a coverage warning and is not marked complete until that separate collection is implemented and tested. Conversation attachments are unaffected by this warning.

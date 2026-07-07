@@ -203,6 +203,7 @@ export async function downloadAsset(
     }
 
     let lastError: unknown
+    let lastErrorPermanent = false
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
         signal.throwIfAborted()
         manifest.attempts = attempt
@@ -235,11 +236,22 @@ export async function downloadAsset(
         catch (error) {
             lastError = error
             if (signal.aborted) throw error
-            const retryable = !(error instanceof ApiError)
+            // 403/404/410 and PermanentAssetError mean the server told us the
+            // asset is not fetchable; there is nothing further the script can
+            // do, so surface these as `unavailable` instead of a retryable
+            // failure. Everything else counts as a real transport/handling
+            // problem worth retrying.
+            const permanent = error instanceof PermanentAssetError
+                || (error instanceof ApiError
+                    && (error.status === 403 || error.status === 404 || error.status === 410))
+            lastErrorPermanent = permanent
+            const retryable = !permanent && (
+                !(error instanceof ApiError)
                 || error.status === 408
                 || error.status === 429
                 || error.status >= 500
-            if (!retryable || error instanceof PermanentAssetError) break
+            )
+            if (!retryable) break
             if (attempt < MAX_ATTEMPTS) {
                 const wait = error instanceof ApiError && error.retryAfterMs > 0
                     ? error.retryAfterMs
@@ -249,7 +261,7 @@ export async function downloadAsset(
         }
     }
 
-    manifest.status = 'failed'
+    manifest.status = lastErrorPermanent ? 'unavailable' : 'failed'
     manifest.error = lastError instanceof Error ? lastError.message : String(lastError)
     return manifest
 }

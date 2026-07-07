@@ -67,7 +67,9 @@ export function timestampLabel(value: number | string | undefined): string {
     else if (typeof value === 'string') date = new Date(value)
     else date = new Date()
     if (Number.isNaN(date.getTime())) date = new Date()
-    return date.toISOString().replace(/:/g, '-').replace(/\.\d{3}Z$/, '')
+    const pad = (input: number): string => String(input).padStart(2, '0')
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
+        + `T${pad(date.getHours())}-${pad(date.getMinutes())}-${pad(date.getSeconds())}`
 }
 
 export function conversationId(conversation: RawConversation): string {

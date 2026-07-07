@@ -315,7 +315,7 @@
   }
   const FILE_ID_RE = new RegExp("(?<![A-Za-z0-9])(?:file_[A-Za-z0-9]{16,}|file-(?!service\\b)[A-Za-z0-9]{16,})", "gi");
   const LIBRARY_ID_RE = /libfile_[A-Za-z0-9]{16,}/gi;
-  const POINTER_RE = /(?:sediment|file-service):\/\/[^\s\])}"']+/gi;
+  const POINTER_RE = /(?:sediment|file-service):\/\/(?=file[_-]|libfile_)[^\s\])}"'$]+/gi;
   const MY_FILES_RE = /file:\/\/my_files\/[^\s\])}"']+/gi;
   const SANDBOX_RE = /sandbox:\/[^\s\])}"']+/gi;
   const DATA_IMAGE_RE = /data:image\/[A-Za-z0-9.+-]+;base64,[A-Za-z0-9+/=\s]+/gi;
@@ -477,6 +477,19 @@ ${reference.kind}`;
         aliasToKey.set(id, asset.key);
         aliasToKey.set(`file:${id}`, asset.key);
       }
+      const rawName = typeof attachment.name === "string" ? attachment.name : "";
+      const sandboxMatch = rawName.match(/\/mnt\/data\/[^?#]+/);
+      if (sandboxMatch && conversationId2 && context.messageId) {
+        const sandboxPath = sandboxMatch[0];
+        const params = new URLSearchParams({
+          message_id: context.messageId,
+          sandbox_path: sandboxPath
+        });
+        asset.directUrlSet.add(
+          `/backend-api/conversation/${encodeURIComponent(conversationId2)}/interpreter/download?${params}`
+        );
+        asset.sandboxPathSet.add(`sandbox:${sandboxPath}`);
+      }
     };
     const scanString = (value, path, context, hints) => {
       var _a2;
@@ -583,10 +596,9 @@ ${reference.kind}`;
       assets.delete(key);
     }
     return [...assets.values()].map((asset) => {
-      const hasUserUpload = asset.references.some((reference) => reference.kind === "user-upload");
-      const hasIndependentBytes = asset.directUrlSet.size > 0 || asset.sandboxPathSet.size > 0 || asset.inlineDataUrl != null;
-      const referenceOnly = !hasUserUpload && !hasIndependentBytes;
-      const referenceOnlyReason = referenceOnly ? "No user upload record and no direct URL, sandbox file, or inline data" : null;
+      const hasIndependentBytes = asset.fileId != null || asset.directUrlSet.size > 0 || asset.sandboxPathSet.size > 0 || asset.inlineDataUrl != null;
+      const referenceOnly = !hasIndependentBytes;
+      const referenceOnlyReason = referenceOnly ? "No fileId, direct URL, sandbox file, or inline data attached to this reference" : null;
       return {
         key: asset.key,
         fileId: asset.fileId,
@@ -792,11 +804,10 @@ ${reference.kind}`;
   }
   function timestampLabel(value) {
     let date;
-    if (typeof value === "number") date = new Date(value * 1e3);
-    else if (typeof value === "string") date = new Date(value);
-    else date = /* @__PURE__ */ new Date();
+    date = /* @__PURE__ */ new Date();
     if (Number.isNaN(date.getTime())) date = /* @__PURE__ */ new Date();
-    return date.toISOString().replace(/:/g, "-").replace(/\.\d{3}Z$/, "");
+    const pad = (input) => String(input).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}-${pad(date.getMinutes())}-${pad(date.getSeconds())}`;
   }
   function conversationId(conversation) {
     return String(conversation.id ?? conversation.conversation_id ?? "unknown-conversation");
@@ -1016,6 +1027,7 @@ ${reference.kind}`;
       return manifest;
     }
     let lastError;
+    let lastErrorPermanent = false;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
       signal.throwIfAborted();
       manifest.attempts = attempt;
@@ -1046,15 +1058,17 @@ ${reference.kind}`;
       } catch (error) {
         lastError = error;
         if (signal.aborted) throw error;
-        const retryable = !(error instanceof ApiError) || error.status === 408 || error.status === 429 || error.status >= 500;
-        if (!retryable || error instanceof PermanentAssetError) break;
+        const permanent = error instanceof PermanentAssetError || error instanceof ApiError && (error.status === 403 || error.status === 404 || error.status === 410);
+        lastErrorPermanent = permanent;
+        const retryable = !permanent && (!(error instanceof ApiError) || error.status === 408 || error.status === 429 || error.status >= 500);
+        if (!retryable) break;
         if (attempt < MAX_ATTEMPTS) {
           const wait2 = error instanceof ApiError && error.retryAfterMs > 0 ? error.retryAfterMs : Math.min(1e3 * 2 ** (attempt - 1), 15e3);
           await sleep(wait2, signal);
         }
       }
     }
-    manifest.status = "failed";
+    manifest.status = lastErrorPermanent ? "unavailable" : "failed";
     manifest.error = lastError instanceof Error ? lastError.message : String(lastError);
     return manifest;
   }
@@ -1098,6 +1112,7 @@ ${reference.kind}`;
     const downloaded = entries.filter((entry) => entry.status === "downloaded").length;
     const existing = entries.filter((entry) => entry.status === "existing").length;
     const failed = entries.filter((entry) => entry.status === "failed").length;
+    const unavailable = entries.filter((entry) => entry.status === "unavailable").length;
     const unresolved = entries.filter((entry) => entry.status === "unresolved").length;
     const referenceOnly = entries.filter((entry) => entry.status === "reference-only").length;
     return {
@@ -1108,8 +1123,11 @@ ${reference.kind}`;
       downloaded,
       existing,
       failed,
+      unavailable,
       unresolved,
       referenceOnly,
+      // `unavailable` is a server-side refusal (403/404/410) that the script
+      // cannot recover from, so it does not stop a run from being complete.
       complete: failed === 0 && unresolved === 0 && coverageWarnings.length === 0,
       coverageWarnings,
       assets: entries
@@ -1152,8 +1170,12 @@ ${reference.kind}`;
       downloaded: 0,
       existing: 0,
       failedAssets: 0,
+      unavailableAssets: 0,
       unresolvedAssets: 0,
       referenceOnlyAssets: 0,
+      failedConversationIds: [],
+      failedProjectIds: [],
+      incompleteProjectIds: [],
       errors: []
     };
     const archivedProjectIds = /* @__PURE__ */ new Set();
@@ -1184,13 +1206,20 @@ ${reference.kind}`;
         summary.downloaded += manifest.downloaded;
         summary.existing += manifest.existing;
         summary.failedAssets += manifest.failed;
+        summary.unavailableAssets += manifest.unavailable;
         summary.unresolvedAssets += manifest.unresolved;
         summary.referenceOnlyAssets += manifest.referenceOnly;
-        if (manifest.failed > 0 || manifest.unresolved > 0) summary.failedProjects += 1;
-        else if (manifest.coverageWarnings.length > 0) summary.incompleteProjects += 1;
+        if (manifest.failed > 0 || manifest.unresolved > 0) {
+          summary.failedProjects += 1;
+          summary.failedProjectIds.push({ id: project.id, name: project.name });
+        } else if (manifest.coverageWarnings.length > 0) {
+          summary.incompleteProjects += 1;
+          summary.incompleteProjectIds.push({ id: project.id, name: project.name });
+        }
       } catch (error) {
         if (signal.aborted) throw error;
         summary.failedProjects += 1;
+        summary.failedProjectIds.push({ id: project.id, name: project.name });
         summary.errors.push({
           conversationId: `project:${project.id}`,
           title: project.name,
@@ -1213,7 +1242,7 @@ ${reference.kind}`;
         const project = projectForConversation(conversation, record.project, projects);
         if (project) await archiveProject(project, 0, 1);
         const folder = await conversationDirectory(accountFolder, conversation, project);
-        const historyName = `history-${timestampLabel(conversation.update_time ?? conversation.create_time)}.json`;
+        const historyName = `history-${timestampLabel(void 0)}.json`;
         await writeJson(folder, historyName, conversation);
         const assets = discoverAssets(conversation);
         let completedAssets = 0;
@@ -1234,13 +1263,24 @@ ${reference.kind}`;
         summary.downloaded += manifest.downloaded;
         summary.existing += manifest.existing;
         summary.failedAssets += manifest.failed;
+        summary.unavailableAssets += manifest.unavailable;
         summary.unresolvedAssets += manifest.unresolved;
         summary.referenceOnlyAssets += manifest.referenceOnly;
         if (manifest.complete) summary.completeConversations += 1;
-        else summary.failedConversations += 1;
+        else {
+          summary.failedConversations += 1;
+          summary.failedConversationIds.push({
+            id: record.item.id,
+            title: String(conversation.title ?? record.item.title ?? record.item.id)
+          });
+        }
       } catch (error) {
         if (signal.aborted) throw error;
         summary.failedConversations += 1;
+        summary.failedConversationIds.push({
+          id: record.item.id,
+          title: record.item.title
+        });
         summary.errors.push({
           conversationId: record.item.id,
           title: record.item.title,
@@ -1308,20 +1348,28 @@ ${reference.kind}`;
     }
     root.dataset.docked = "true";
   }
+  function listIds(items) {
+    return items.map((item) => {
+      const label = item.title ?? item.name ?? "";
+      return label ? `${item.id}  ${label}` : item.id;
+    }).join("\n");
+  }
   function summaryText(summary) {
-    return [
-      `Project ${summary.projects}`,
-      `Project失败 ${summary.failedProjects}`,
-      `Project待补 ${summary.incompleteProjects}`,
-      `对话 ${summary.conversations}`,
-      `完整 ${summary.completeConversations}`,
-      `下载 ${summary.downloaded}`,
-      `已存在 ${summary.existing}`,
-      `失败附件 ${summary.failedAssets}`,
-      `无法解析 ${summary.unresolvedAssets}`,
-      `仅引用 ${summary.referenceOnlyAssets}`,
-      `失败对话 ${summary.failedConversations}`
-    ].join("\n");
+    const lines = [
+      `对话  完整 ${summary.completeConversations} · 未完成 ${summary.failedConversations} · 共 ${summary.conversations}`,
+      `附件  下载 ${summary.downloaded} · 已存在 ${summary.existing} · 下载失败 ${summary.failedAssets} · 服务端受限 ${summary.unavailableAssets} · 无法解析 ${summary.unresolvedAssets} · 仅引用 ${summary.referenceOnlyAssets}`,
+      `Project  处理 ${summary.projects} · 未完成 ${summary.failedProjects} · Sources 未抓取 ${summary.incompleteProjects}`
+    ];
+    if (summary.failedConversationIds.length) {
+      lines.push("", `未完成对话 (${summary.failedConversationIds.length})：`, listIds(summary.failedConversationIds));
+    }
+    if (summary.failedProjectIds.length) {
+      lines.push("", `未完成 Project (${summary.failedProjectIds.length})：`, listIds(summary.failedProjectIds));
+    }
+    if (summary.incompleteProjectIds.length) {
+      lines.push("", `Sources 未抓取的 Project (${summary.incompleteProjectIds.length})：`, listIds(summary.incompleteProjectIds));
+    }
+    return lines.join("\n");
   }
   function conversationDate(value, full = false) {
     if (value == null) return "—";
@@ -1592,12 +1640,7 @@ ${reference.kind}`;
       loading = true;
       loadingAll = all;
       setStatusTone("neutral");
-      appendAudit("catalog.load.start", {
-        source: sourceKey,
-        mode: reset ? "first-page" : all ? "all-remaining" : "next-page",
-        offset: state.nextOffset,
-        cursor: state.nextCursor == null ? null : String(state.nextCursor)
-      });
+      const mode = reset ? "first-page" : all ? "all-remaining" : "next-page";
       if (reset) renderSource();
       else {
         if (all) loadAll.textContent = "正在加载全部…";
@@ -1608,6 +1651,7 @@ ${reference.kind}`;
         const byId = new Map(state.records.map((record) => [record.item.id, record]));
         const seenCursors = /* @__PURE__ */ new Set();
         if (project && state.nextCursor != null) seenCursors.add(String(state.nextCursor));
+        let pages = 0;
         do {
           const page = await fetchConversationPage((project == null ? void 0 : project.id) ?? null, request.signal, {
             archived: sourceKey === ARCHIVED_SOURCE,
@@ -1626,6 +1670,7 @@ ${reference.kind}`;
           state.total = page.total;
           state.hasMore = page.hasMore;
           state.loaded = true;
+          pages += 1;
           if (project && state.hasMore && state.nextCursor != null) {
             const cursorKey = String(state.nextCursor);
             if (seenCursors.has(cursorKey)) {
@@ -1633,14 +1678,16 @@ ${reference.kind}`;
             }
             seenCursors.add(cursorKey);
           }
-          appendAudit("catalog.page.loaded", {
-            source: sourceKey,
-            loaded: state.records.length,
-            scanned: state.nextOffset,
-            total: page.total,
-            hasMore: state.hasMore
-          });
         } while (all && state.hasMore);
+        appendAudit("catalog.load.complete", {
+          source: sourceKey,
+          mode,
+          pages,
+          loaded: state.records.length,
+          scanned: state.nextOffset,
+          total: state.total,
+          hasMore: state.hasMore
+        });
       } catch (error) {
         if (request.signal.aborted) return;
         appendAudit("catalog.load.error", {
@@ -1709,18 +1756,23 @@ ${reference.kind}`;
       }
       await loadPage(true);
     };
+    let lastConversationIndex = -1;
     const update = (value) => {
       const total = Math.max(value.total, 1);
       progress.max = total;
       progress.value = value.current;
-      appendAudit("archive.progress", {
-        runId: activeRunId,
-        phase: value.phase,
-        current: value.current,
-        total: value.total,
-        title: value.title,
-        detail: value.detail
-      });
+      if (value.phase === "listing") return;
+      if (value.phase === "attachments") return;
+      if (value.phase === "conversation") {
+        if (value.current === lastConversationIndex) return;
+        lastConversationIndex = value.current;
+        appendAudit("archive.conversation.start", {
+          runId: activeRunId,
+          current: value.current,
+          total: value.total,
+          title: value.title
+        });
+      }
     };
     const start = async () => {
       if (selectedIds.size === 0) return;
@@ -1738,13 +1790,13 @@ ${reference.kind}`;
         const folder = await window.showDirectoryPicker({ id: "chatgpt-archive", mode: "readwrite" });
         controller = new AbortController();
         activeRunId = crypto.randomUUID();
+        lastConversationIndex = -1;
         resetAudit();
         appendAudit("archive.start", {
           runId: activeRunId,
           mode: "selected",
           destination: folder.name,
-          selectedCount: selectedIds.size,
-          selectedConversationIds: [...selectedIds].join("\n")
+          selectedCount: selectedIds.size
         });
         setRunning(true);
         setStatusTone("neutral");

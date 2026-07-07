@@ -36,7 +36,14 @@ describe('archive names', () => {
             .toBe('[Project]_[Work]_[g-p-123]')
     })
 
-    it('uses filesystem-safe ISO timestamps', () => {
-        expect(timestampLabel('2026-07-04T00:42:35.000Z')).toBe('2026-07-04T00-42-35')
+    it('uses filesystem-safe local timestamps', () => {
+        expect(timestampLabel('2026-07-04T00:42:35.000Z'))
+            .toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}$/)
+        const utc = Date.UTC(2026, 6, 4, 0, 42, 35)
+        const expected = new Date(utc)
+        const pad = (value: number) => String(value).padStart(2, '0')
+        const local = `${expected.getFullYear()}-${pad(expected.getMonth() + 1)}-${pad(expected.getDate())}`
+            + `T${pad(expected.getHours())}-${pad(expected.getMinutes())}-${pad(expected.getSeconds())}`
+        expect(timestampLabel('2026-07-04T00:42:35.000Z')).toBe(local)
     })
 })

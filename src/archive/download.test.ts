@@ -8,12 +8,19 @@ const api = vi.hoisted(() => ({
 
 vi.mock('../chatgpt/api', () => ({
     ApiError: class ApiError extends Error {
-        retryAfterMs = 0
+        status: number
+        retryAfterMs: number
+        constructor(message?: string, status = 0, retryAfterMs = 0) {
+            super(message)
+            this.status = status
+            this.retryAfterMs = retryAfterMs
+        }
     },
     resolveFileDownload: api.resolveFileDownload,
     fetchFileResponse: api.fetchFileResponse,
 }))
 
+import { ApiError } from '../chatgpt/api'
 import { downloadAsset } from './download'
 import { assetFileName } from './naming'
 
@@ -234,6 +241,23 @@ describe('downloadAsset', () => {
         expect(result.attempts).toBe(0)
         expect(api.resolveFileDownload).not.toHaveBeenCalled()
         expect(api.fetchFileResponse).not.toHaveBeenCalled()
+    })
+
+    it('marks a 403 refusal as unavailable rather than failed', async () => {
+        const folder = new MemoryDirectory()
+        api.resolveFileDownload.mockRejectedValue(
+            new ApiError('403 : /files/download/xxx', 403, 0),
+        )
+
+        const result = await downloadAsset(
+            asset(),
+            folder as unknown as FileSystemDirectoryHandle,
+            new AbortController().signal,
+        )
+
+        expect(result.status).toBe('unavailable')
+        expect(result.attempts).toBe(1)
+        expect(result.error).toContain('403')
     })
 
     it('keeps an unresolved sandbox path visible in the manifest', async () => {

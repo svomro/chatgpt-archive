@@ -36,7 +36,7 @@ export interface DiscoveredAsset {
     referenceOnlyReason: string | null
 }
 
-export type AssetStatus = 'downloaded' | 'existing' | 'failed' | 'unresolved' | 'reference-only'
+export type AssetStatus = 'downloaded' | 'existing' | 'failed' | 'unavailable' | 'unresolved' | 'reference-only'
 
 export interface AssetManifestEntry {
     key: string
@@ -62,6 +62,7 @@ export interface AttachmentManifest {
     downloaded: number
     existing: number
     failed: number
+    unavailable: number
     unresolved: number
     referenceOnly: number
     complete: boolean
@@ -92,7 +93,11 @@ export interface ArchiveSummary {
     downloaded: number
     existing: number
     failedAssets: number
+    unavailableAssets: number
     unresolvedAssets: number
     referenceOnlyAssets: number
+    failedConversationIds: Array<{ id: string; title: string }>
+    failedProjectIds: Array<{ id: string; name: string }>
+    incompleteProjectIds: Array<{ id: string; name: string }>
     errors: Array<{ conversationId: string; title: string; error: string }>
 }

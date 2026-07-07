@@ -77,6 +77,7 @@ function createManifest(
     const downloaded = entries.filter(entry => entry.status === 'downloaded').length
     const existing = entries.filter(entry => entry.status === 'existing').length
     const failed = entries.filter(entry => entry.status === 'failed').length
+    const unavailable = entries.filter(entry => entry.status === 'unavailable').length
     const unresolved = entries.filter(entry => entry.status === 'unresolved').length
     const referenceOnly = entries.filter(entry => entry.status === 'reference-only').length
     return {
@@ -87,8 +88,11 @@ function createManifest(
         downloaded,
         existing,
         failed,
+        unavailable,
         unresolved,
         referenceOnly,
+        // `unavailable` is a server-side refusal (403/404/410) that the script
+        // cannot recover from, so it does not stop a run from being complete.
         complete: failed === 0 && unresolved === 0 && coverageWarnings.length === 0,
         coverageWarnings,
         assets: entries,
@@ -164,8 +168,12 @@ export async function runArchive(options: ArchiveOptions): Promise<ArchiveSummar
         downloaded: 0,
         existing: 0,
         failedAssets: 0,
+        unavailableAssets: 0,
         unresolvedAssets: 0,
         referenceOnlyAssets: 0,
+        failedConversationIds: [],
+        failedProjectIds: [],
+        incompleteProjectIds: [],
         errors: [],
     }
 
@@ -197,14 +205,22 @@ export async function runArchive(options: ArchiveOptions): Promise<ArchiveSummar
             summary.downloaded += manifest.downloaded
             summary.existing += manifest.existing
             summary.failedAssets += manifest.failed
+            summary.unavailableAssets += manifest.unavailable
             summary.unresolvedAssets += manifest.unresolved
             summary.referenceOnlyAssets += manifest.referenceOnly
-            if (manifest.failed > 0 || manifest.unresolved > 0) summary.failedProjects += 1
-            else if (manifest.coverageWarnings.length > 0) summary.incompleteProjects += 1
+            if (manifest.failed > 0 || manifest.unresolved > 0) {
+                summary.failedProjects += 1
+                summary.failedProjectIds.push({ id: project.id, name: project.name })
+            }
+            else if (manifest.coverageWarnings.length > 0) {
+                summary.incompleteProjects += 1
+                summary.incompleteProjectIds.push({ id: project.id, name: project.name })
+            }
         }
         catch (error) {
             if (signal.aborted) throw error
             summary.failedProjects += 1
+            summary.failedProjectIds.push({ id: project.id, name: project.name })
             summary.errors.push({
                 conversationId: `project:${project.id}`,
                 title: project.name,
@@ -235,7 +251,7 @@ export async function runArchive(options: ArchiveOptions): Promise<ArchiveSummar
             const project = projectForConversation(conversation, record.project, projects)
             if (project) await archiveProject(project, 0, 1)
             const folder = await conversationDirectory(accountFolder, conversation, project)
-            const historyName = `history-${timestampLabel(conversation.update_time ?? conversation.create_time)}.json`
+            const historyName = `history-${timestampLabel(undefined)}.json`
             await writeJson(folder, historyName, conversation)
 
             const assets = discoverAssets(conversation)
@@ -258,14 +274,25 @@ export async function runArchive(options: ArchiveOptions): Promise<ArchiveSummar
             summary.downloaded += manifest.downloaded
             summary.existing += manifest.existing
             summary.failedAssets += manifest.failed
+            summary.unavailableAssets += manifest.unavailable
             summary.unresolvedAssets += manifest.unresolved
             summary.referenceOnlyAssets += manifest.referenceOnly
             if (manifest.complete) summary.completeConversations += 1
-            else summary.failedConversations += 1
+            else {
+                summary.failedConversations += 1
+                summary.failedConversationIds.push({
+                    id: record.item.id,
+                    title: String(conversation.title ?? record.item.title ?? record.item.id),
+                })
+            }
         }
         catch (error) {
             if (signal.aborted) throw error
             summary.failedConversations += 1
+            summary.failedConversationIds.push({
+                id: record.item.id,
+                title: record.item.title,
+            })
             summary.errors.push({
                 conversationId: record.item.id,
                 title: record.item.title,

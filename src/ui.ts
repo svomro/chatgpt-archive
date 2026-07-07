@@ -61,20 +61,29 @@ function dockUi(root: HTMLElement): void {
     root.dataset.docked = 'true'
 }
 
+function listIds(items: Array<{ id: string; title?: string; name?: string }>): string {
+    return items.map(item => {
+        const label = item.title ?? item.name ?? ''
+        return label ? `${item.id}  ${label}` : item.id
+    }).join('\n')
+}
+
 function summaryText(summary: ArchiveSummary): string {
-    return [
-        `Project ${summary.projects}`,
-        `Project失败 ${summary.failedProjects}`,
-        `Project待补 ${summary.incompleteProjects}`,
-        `对话 ${summary.conversations}`,
-        `完整 ${summary.completeConversations}`,
-        `下载 ${summary.downloaded}`,
-        `已存在 ${summary.existing}`,
-        `失败附件 ${summary.failedAssets}`,
-        `无法解析 ${summary.unresolvedAssets}`,
-        `仅引用 ${summary.referenceOnlyAssets}`,
-        `失败对话 ${summary.failedConversations}`,
-    ].join('\n')
+    const lines: string[] = [
+        `对话  完整 ${summary.completeConversations} · 未完成 ${summary.failedConversations} · 共 ${summary.conversations}`,
+        `附件  下载 ${summary.downloaded} · 已存在 ${summary.existing} · 下载失败 ${summary.failedAssets} · 服务端受限 ${summary.unavailableAssets} · 无法解析 ${summary.unresolvedAssets} · 仅引用 ${summary.referenceOnlyAssets}`,
+        `Project  处理 ${summary.projects} · 未完成 ${summary.failedProjects} · Sources 未抓取 ${summary.incompleteProjects}`,
+    ]
+    if (summary.failedConversationIds.length) {
+        lines.push('', `未完成对话 (${summary.failedConversationIds.length})：`, listIds(summary.failedConversationIds))
+    }
+    if (summary.failedProjectIds.length) {
+        lines.push('', `未完成 Project (${summary.failedProjectIds.length})：`, listIds(summary.failedProjectIds))
+    }
+    if (summary.incompleteProjectIds.length) {
+        lines.push('', `Sources 未抓取的 Project (${summary.incompleteProjectIds.length})：`, listIds(summary.incompleteProjectIds))
+    }
+    return lines.join('\n')
 }
 
 function conversationDate(value: number | string | undefined, full = false): string {
@@ -369,12 +378,7 @@ export function mountUi(): void {
         loading = true
         loadingAll = all
         setStatusTone('neutral')
-        appendAudit('catalog.load.start', {
-            source: sourceKey,
-            mode: reset ? 'first-page' : all ? 'all-remaining' : 'next-page',
-            offset: state.nextOffset,
-            cursor: state.nextCursor == null ? null : String(state.nextCursor),
-        })
+        const mode = reset ? 'first-page' : all ? 'all-remaining' : 'next-page'
         if (reset) renderSource()
         else {
             if (all) loadAll.textContent = '正在加载全部…'
@@ -385,6 +389,7 @@ export function mountUi(): void {
             const byId = new Map(state.records.map(record => [record.item.id, record]))
             const seenCursors = new Set<string>()
             if (project && state.nextCursor != null) seenCursors.add(String(state.nextCursor))
+            let pages = 0
             do {
                 const page = await fetchConversationPage(project?.id ?? null, request.signal, {
                     archived: sourceKey === ARCHIVED_SOURCE,
@@ -403,6 +408,7 @@ export function mountUi(): void {
                 state.total = page.total
                 state.hasMore = page.hasMore
                 state.loaded = true
+                pages += 1
 
                 if (project && state.hasMore && state.nextCursor != null) {
                     const cursorKey = String(state.nextCursor)
@@ -411,16 +417,17 @@ export function mountUi(): void {
                     }
                     seenCursors.add(cursorKey)
                 }
-
-                appendAudit('catalog.page.loaded', {
-                    source: sourceKey,
-                    loaded: state.records.length,
-                    scanned: state.nextOffset,
-                    total: page.total,
-                    hasMore: state.hasMore,
-                })
             }
             while (all && state.hasMore)
+            appendAudit('catalog.load.complete', {
+                source: sourceKey,
+                mode,
+                pages,
+                loaded: state.records.length,
+                scanned: state.nextOffset,
+                total: state.total,
+                hasMore: state.hasMore,
+            })
         }
         catch (error) {
             if (request.signal.aborted) return
@@ -496,18 +503,26 @@ export function mountUi(): void {
         await loadPage(true)
     }
 
+    let lastConversationIndex = -1
     const update = (value: ArchiveProgress) => {
         const total = Math.max(value.total, 1)
         progress.max = total
         progress.value = value.current
-        appendAudit('archive.progress', {
-            runId: activeRunId,
-            phase: value.phase,
-            current: value.current,
-            total: value.total,
-            title: value.title,
-            detail: value.detail,
-        })
+        // Attachment-level progress fires once per file. Only surface phase
+        // transitions in the audit log so it stays readable — the progress bar
+        // still tracks every asset.
+        if (value.phase === 'listing') return
+        if (value.phase === 'attachments') return
+        if (value.phase === 'conversation') {
+            if (value.current === lastConversationIndex) return
+            lastConversationIndex = value.current
+            appendAudit('archive.conversation.start', {
+                runId: activeRunId,
+                current: value.current,
+                total: value.total,
+                title: value.title,
+            })
+        }
     }
 
     const start = async () => {
@@ -528,13 +543,13 @@ export function mountUi(): void {
             const folder = await window.showDirectoryPicker({ id: 'chatgpt-archive', mode: 'readwrite' })
             controller = new AbortController()
             activeRunId = crypto.randomUUID()
+            lastConversationIndex = -1
             resetAudit()
             appendAudit('archive.start', {
                 runId: activeRunId,
                 mode: 'selected',
                 destination: folder.name,
                 selectedCount: selectedIds.size,
-                selectedConversationIds: [...selectedIds].join('\n'),
             })
             setRunning(true)
             setStatusTone('neutral')
