@@ -950,13 +950,14 @@ ${reference.kind}`;
       try {
         let response = await fetchFileResponse(url, signal);
         const contentType = (response.headers.get("content-type") ?? "").toLowerCase();
-        if (contentType.includes("json") || url.includes("/interpreter/download?")) {
+        const isInterpreterDescriptor = url.includes("/interpreter/download?");
+        if (isInterpreterDescriptor) {
           const descriptor = await response.clone().json().catch(() => null);
           if ((descriptor == null ? void 0 : descriptor.status) === "success" && descriptor.download_url) {
             response = await fetchFileResponse(descriptor.download_url, signal, true);
           } else if (contentType.includes("json")) {
             throw new Error(
-              (descriptor == null ? void 0 : descriptor.error_message) || (descriptor == null ? void 0 : descriptor.error_code) || "Download endpoint returned JSON instead of file bytes"
+              (descriptor == null ? void 0 : descriptor.error_message) || (descriptor == null ? void 0 : descriptor.error_code) || "Interpreter download endpoint returned JSON without a download URL"
             );
           }
         }

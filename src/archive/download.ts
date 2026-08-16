@@ -95,7 +95,8 @@ async function writeResolvedAsset(
         try {
             let response = await fetchFileResponse(url, signal)
             const contentType = (response.headers.get('content-type') ?? '').toLowerCase()
-            if (contentType.includes('json') || url.includes('/interpreter/download?')) {
+            const isInterpreterDescriptor = url.includes('/interpreter/download?')
+            if (isInterpreterDescriptor) {
                 const descriptor = await response.clone().json().catch(() => null) as {
                     status?: string
                     download_url?: string
@@ -111,7 +112,7 @@ async function writeResolvedAsset(
                     throw new Error(
                         descriptor?.error_message
                             || descriptor?.error_code
-                            || 'Download endpoint returned JSON instead of file bytes',
+                            || 'Interpreter download endpoint returned JSON without a download URL',
                     )
                 }
             }

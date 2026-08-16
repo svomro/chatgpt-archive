@@ -129,6 +129,39 @@ describe('downloadAsset', () => {
         expect(folder.files.has(result.localFile!)).toBe(true)
     })
 
+    it('downloads a JSON attachment instead of mistaking its bytes for an Interpreter descriptor', async () => {
+        const folder = new MemoryDirectory()
+        const chart = JSON.stringify({ type: 'chart', series: [{ x: 1, y: 2 }] })
+        api.resolveFileDownload.mockResolvedValue({
+            status: 'success',
+            download_url: 'https://files.oaiusercontent.com/signed-chart',
+            file_name: 'Line Chart',
+            file_size_bytes: chart.length,
+            mime_type: 'application/json',
+        })
+        api.fetchFileResponse.mockResolvedValue(new Response(chart, {
+            headers: { 'content-type': 'application/json' },
+        }))
+
+        const result = await downloadAsset(
+            asset({
+                key: 'file:file_00000000bd0881fda301546814721c87',
+                fileId: 'file_00000000bd0881fda301546814721c87',
+                aliases: ['file_00000000bd0881fda301546814721c87'],
+                names: [],
+                mimeTypes: [],
+                expectedSizes: [],
+            }),
+            folder as unknown as FileSystemDirectoryHandle,
+            new AbortController().signal,
+        )
+
+        expect(result.status).toBe('downloaded')
+        expect(result.localFile).toBe('Line Chart_[file_00000000bd0881fda301546814721c87].json')
+        expect(await folder.files.get(result.localFile!)?.text()).toBe(chart)
+        expect(api.fetchFileResponse).toHaveBeenCalledTimes(1)
+    })
+
     it('downloads an interpreter sandbox file without a file ID', async () => {
         const folder = new MemoryDirectory()
         api.fetchFileResponse
