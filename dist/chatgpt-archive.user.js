@@ -1,11 +1,13 @@
 // ==UserScript==
 // @name         ChatGPT Archive
 // @namespace    svomro
-// @version      0.1.0
+// @version      0.1.1
 // @author       svomro
 // @description  Archive raw ChatGPT JSON and all first-party attachments.
 // @license      MIT
 // @icon         https://chatgpt.com/favicon.ico
+// @downloadURL  https://raw.githubusercontent.com/svomro/chatgpt-archive/main/dist/chatgpt-archive.user.js
+// @updateURL    https://raw.githubusercontent.com/svomro/chatgpt-archive/main/dist/chatgpt-archive.user.js
 // @match        https://chatgpt.com/*
 // @match        https://chat.openai.com/*
 // @grant        GM_addStyle
