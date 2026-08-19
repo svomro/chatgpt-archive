@@ -26,6 +26,35 @@ pnpm build
 
 Install `dist/chatgpt-archive.user.js` in Tampermonkey. On ChatGPT, use the floating **Archive** button and choose the parent directory where the script should create `ChatGPT/`.
 
+## Mobile stream recorder
+
+For the iOS app, `tools/mobile_mitm_recorder.py` records ChatGPT SSE/conversation responses at the HTTP proxy layer. Each response chunk is appended to disk before the unchanged chunk is forwarded to the app.
+
+Install mitmproxy once:
+
+```bash
+brew install --cask mitmproxy
+```
+
+Start the recorder:
+
+```bash
+./scripts/start-mobile-recorder.sh
+```
+
+By default it binds to the Mac's `en0` address on port `8080` and writes captures under `~/ChatGPT-Stream-Captures/`. Point the iPhone at that HTTP proxy, open `http://mitm.it` in Safari, install the iOS CA profile, then enable full trust for the mitmproxy root certificate under **Settings → General → About → Certificate Trust Settings**.
+
+Captured flows contain:
+
+```text
+~/ChatGPT-Stream-Captures/YYYY-MM-DD/<flow>/
+├── meta.json
+├── raw.sse
+└── result.json
+```
+
+`Authorization`, `Cookie`, proxy authorization, and `Set-Cookie` header values are redacted from `meta.json`. The raw streamed response body is preserved untouched in `raw.sse`.
+
 ## Output
 
 ```text
