@@ -2,7 +2,9 @@ import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-    { ignores: ['dist/**', 'coverage/**'] },
+    // tools/live-stream/* are standalone CommonJS diagnostics run with plain node,
+    // not part of the Vite build.
+    { ignores: ['dist/**', 'coverage/**', 'tools/live-stream/**'] },
     js.configs.recommended,
     ...tseslint.configs.recommended,
     {

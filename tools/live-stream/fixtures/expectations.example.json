@@ -1,0 +1,26 @@
+{
+  "_comment": "Copy to expectations.local.json (git-ignored) and point it at one of your own captures. The suites assert on real content, which is why these values are not committed.",
+  "singleTurn": {
+    "capture": "/absolute/path/to/chatgpt-archive-<ts>.jsonl",
+    "conversationId": "00000000-0000-0000-0000-000000000000",
+    "turnId": "00000000-0000-0000-0000-000000000000",
+    "model": "gpt-5-6-thinking",
+    "thinkingEffort": "extended",
+    "user": "the prompt text of that turn",
+    "thoughtSummaries": ["first thought summary", "second thought summary"],
+    "thoughtWithContent": "a summary whose thought has non-empty content",
+    "thoughtCount": 4,
+    "thoughtsDeduped": 1,
+    "recapText": "思考了 51s",
+    "recapSeconds": 51,
+    "finalStartsWith": "first sentence of the answer",
+    "finalContains": "a distinctive phrase from the middle or end",
+    "finalEndsWith": "the exact tail, private-use citation delimiters included",
+    "finalMinLength": 400,
+    "commentaryCount": 2,
+    "toolCount": 3
+  },
+  "multiTurn": {
+    "capture": "/absolute/path/to/a-capture-with-many-turns.jsonl"
+  }
+}
