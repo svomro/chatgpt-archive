@@ -1,9 +1,11 @@
 // ==UserScript==
 // @name         ChatGPT Live Stream Recorder
 // @namespace    vesper.local
-// @version      0.4.1
+// @version      0.4.2
 // @description  Capture ChatGPT's raw model stream (fetch SSE + WebSocket second leg + EventSource) chunk-by-chunk into IndexedDB, then reassemble logical turns -- thoughts, commentary, tools, reasoning recap, final -- as a derived view over the raw bytes.
 // @author       vesper
+// @downloadURL  https://raw.githubusercontent.com/svomro/chatgpt-archive/main/dist/chatgpt-live-stream.user.js
+// @updateURL    https://raw.githubusercontent.com/svomro/chatgpt-archive/main/dist/chatgpt-live-stream.user.js
 // @match        https://chatgpt.com/*
 // @match        https://chat.openai.com/*
 // @run-at       document-start
@@ -1309,5 +1311,5 @@ function turnsToMarkdown(turns) {
   setInterval(() => hud.render(), 2000);
 
   window.__cgptArchive = api;
-  LOG('armed v0.4.1 -- fetch + WebSocket + EventSource hooked at document-start');
+  LOG('armed v0.4.2 -- fetch + WebSocket + EventSource hooked at document-start');
 })();
