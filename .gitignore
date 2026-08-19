@@ -24,3 +24,8 @@ tsconfig.tsbuildinfo
 .claude
 
 tasks/
+
+# live-stream recorder: real captures and the values derived from them are
+# personal conversation data and never belong in this repo
+tools/live-stream/fixtures/*.local.json
+tools/live-stream/fixtures/*.capture.jsonl
