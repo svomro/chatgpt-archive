@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ChatGPT Live Stream Recorder
 // @namespace    vesper.local
-// @version      0.4.0
+// @version      0.4.1
 // @description  Capture ChatGPT's raw model stream (fetch SSE + WebSocket second leg + EventSource) chunk-by-chunk into IndexedDB, then reassemble logical turns -- thoughts, commentary, tools, reasoning recap, final -- as a derived view over the raw bytes.
 // @author       vesper
 // @match        https://chatgpt.com/*
@@ -1197,53 +1197,108 @@ function turnsToMarkdown(turns) {
   // ---------------------------------------------------------------- hud
 
   const hud = (() => {
-    let el = null, timer = null;
-    // ChatGPT is a React SPA: hydration replaces the body's children and takes
-    // the badge with it. Cache the node but re-attach whenever it has been
-    // orphaned, and hang it off <html> so most re-renders never touch it.
-    function ensure() {
-      const host = document.documentElement || document.body;
-      if (!host) return null;
-      if (el && el.isConnected) return el;
-      if (el) { host.appendChild(el); return el; }
-      el = document.createElement('div');
-      el.style.cssText = [
-        'position:fixed', 'right:12px', 'bottom:12px', 'z-index:2147483647',
-        'font:11px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace',
-        'background:rgba(16,163,127,.92)', 'color:#fff', 'padding:4px 9px',
-        'border-radius:999px', 'cursor:pointer', 'user-select:none',
-        'box-shadow:0 2px 8px rgba(0,0,0,.25)',
-      ].join(';');
-      el.title = 'chatgpt-archive -- click to export raw + turns + markdown';
-      el.onclick = () => api.exportAll();
-      host.appendChild(el);
-      return el;
+    let root = null, button = null, tooltip = null, timer = null;
+    const ROOT_ID = 'chatgpt-live-stream-root';
+    const STYLE_ID = 'chatgpt-live-stream-style';
+
+    function dockPoint() {
+      const profiles = document.querySelectorAll(
+        '[data-testid="accounts-profile-button"], ' +
+        '[role="button"][aria-label*="个人资料"], ' +
+        '[role="button"][aria-label*="profile" i]'
+      );
+      for (const profile of profiles) {
+        const rightAction = profile.querySelector('[data-trailing-button]') ||
+          profile.querySelector('button[aria-label="下载应用"], button[aria-label="Download app"]');
+        if (rightAction && rightAction.parentElement) {
+          const archive = document.getElementById('chatgpt-archive-root');
+          const anchor = archive && archive.parentElement === rightAction.parentElement ? archive : rightAction;
+          return { container: rightAction.parentElement, anchor };
+        }
+      }
+      return null;
     }
+
+    function ensureStyle() {
+      if (document.getElementById(STYLE_ID)) return;
+      const style = document.createElement('style');
+      style.id = STYLE_ID;
+      style.textContent = `
+#${ROOT_ID}{position:relative;z-index:2147483647;display:flex;flex:0 0 auto;align-items:center;color:inherit}
+#${ROOT_ID}[data-docked="false"]{display:none}
+#${ROOT_ID} button{position:relative;display:inline-flex;width:36px;height:36px;align-items:center;justify-content:center;padding:0;border:0;border-radius:9px;background:transparent;color:inherit;cursor:pointer}
+#${ROOT_ID} button:hover,#${ROOT_ID} button:focus-visible{background:var(--token-interactive-bg-secondary-hover,rgb(0 0 0/.08));color:var(--text-primary,#0d0d0d)}
+#${ROOT_ID} svg{display:block}
+#${ROOT_ID} .cgls-dot{fill:currentColor}
+#${ROOT_ID}[data-active="true"] .cgls-dot{fill:#10a37f}
+#${ROOT_ID}[data-capped="true"] .cgls-dot{fill:#c00}
+#${ROOT_ID} .cgls-tooltip{position:absolute;bottom:calc(100% + 8px);left:50%;z-index:2147483647;padding:5px 8px;border-radius:6px;background:#171717;color:#fff;font:12px/1 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;opacity:0;pointer-events:none;transform:translateX(-50%) translateY(3px);transition:opacity .12s ease,transform .12s ease;white-space:nowrap}
+#${ROOT_ID} button:hover .cgls-tooltip,#${ROOT_ID} button:focus-visible .cgls-tooltip{opacity:1;transform:translateX(-50%) translateY(0)}
+`;
+      (document.head || document.documentElement).appendChild(style);
+    }
+
+    function ensure() {
+      const point = dockPoint();
+      if (!point) {
+        if (root) root.dataset.docked = 'false';
+        return root;
+      }
+      ensureStyle();
+      if (!root) {
+        root = document.createElement('div');
+        root.id = ROOT_ID;
+        root.dataset.docked = 'false';
+        root.dataset.active = 'false';
+        root.dataset.capped = 'false';
+        root.innerHTML = `
+          <button type="button" aria-label="Live Stream Recorder">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="20" height="20" aria-hidden="true">
+              <path fill="currentColor" fill-rule="evenodd" d="M10 2.085a7.915 7.915 0 1 1 0 15.83 7.915 7.915 0 0 1 0-15.83m0 1.33a6.585 6.585 0 1 0 0 13.17 6.585 6.585 0 0 0 0-13.17" clip-rule="evenodd"/>
+              <path class="cgls-dot" d="M10 5a5 5 0 1 1 0 10 5 5 0 0 1 0-10"/>
+            </svg>
+            <span class="cgls-tooltip">Live Stream Recorder</span>
+          </button>`;
+        button = root.querySelector('button');
+        tooltip = root.querySelector('.cgls-tooltip');
+        button.onclick = () => api.exportAll();
+      }
+      if (root.parentElement !== point.container || root.nextElementSibling !== point.anchor) {
+        point.container.insertBefore(root, point.anchor);
+      }
+      root.dataset.docked = 'true';
+      return root;
+    }
+
     function render() {
       const e = ensure();
-      if (!e) return;
+      if (!e || !tooltip || !button) return;
       let bytes = 0, ws = 0, dropped = 0;
-      for (const { rec } of live.values()) { bytes += rec.bytes; if (rec.kind === 'websocket') ws++; }
-      for (const { rec } of live.values()) dropped += rec.droppedBytes || 0;
+      for (const { rec } of live.values()) {
+        bytes += rec.bytes;
+        dropped += rec.droppedBytes || 0;
+        if (rec.kind === 'websocket') ws++;
+      }
       const turns = liveAsm.turns.size;
-      if (cappedStreams.size) {
-        // Losing bytes defeats the entire point of the tool, so it cannot be a
-        // subtle change of wording in a green badge.
-        e.style.background = 'rgba(200,0,0,.95)';
-        e.textContent = 'CAPPED -- ' + cappedStreams.size + ' stream' + (cappedStreams.size === 1 ? '' : 's') +
-          ' losing data' + (dropped ? ' (' + (dropped / 1048576).toFixed(1) + 'MB+)' : '');
-        e.title = 'chatgpt-archive: a stream hit the per-stream byte cap and chunks are being dropped. ' +
-          'Run __cgptArchive.audit() for detail, raise it with __cgptArchive.setStreamCap(bytes).';
+      const capped = cappedStreams.size > 0;
+      e.dataset.active = live.size ? 'true' : 'false';
+      e.dataset.capped = capped ? 'true' : 'false';
+
+      if (capped) {
+        tooltip.textContent = 'CAPPED · ' + cappedStreams.size + ' stream' + (cappedStreams.size === 1 ? '' : 's') +
+          ' losing data' + (dropped ? ' · ' + (dropped / 1048576).toFixed(1) + 'MB+' : '');
+        button.setAttribute('aria-label', 'Live Stream Recorder: data loss detected');
         return;
       }
-      e.style.background = 'rgba(16,163,127,.92)';
-      e.title = 'chatgpt-archive -- click to export raw + turns + markdown';
-      const parts = [];
+
+      const parts = ['Live Stream Recorder'];
       if (live.size) parts.push('rec ' + live.size + (ws ? ' (' + ws + ' WS)' : ''));
       if (bytes) parts.push((bytes / 1024).toFixed(1) + 'KB');
       if (turns) parts.push(turns + ' turn' + (turns === 1 ? '' : 's'));
-      e.textContent = parts.length ? '● ' + parts.join(' · ') : '○ archive';
+      tooltip.textContent = parts.join(' · ');
+      button.setAttribute('aria-label', tooltip.textContent);
     }
+
     return { tick() { clearTimeout(timer); timer = setTimeout(render, 120); }, render };
   })();
 
@@ -1254,5 +1309,5 @@ function turnsToMarkdown(turns) {
   setInterval(() => hud.render(), 2000);
 
   window.__cgptArchive = api;
-  LOG('armed v0.4.0 -- fetch + WebSocket + EventSource hooked at document-start');
+  LOG('armed v0.4.1 -- fetch + WebSocket + EventSource hooked at document-start');
 })();
