@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ChatGPT Live Stream Recorder
 // @namespace    vesper.local
-// @version      0.4.2
+// @version      0.4.3
 // @description  Capture ChatGPT's raw model stream (fetch SSE + WebSocket second leg + EventSource) chunk-by-chunk into IndexedDB, then reassemble logical turns -- thoughts, commentary, tools, reasoning recap, final -- as a derived view over the raw bytes.
 // @author       vesper
 // @downloadURL  https://raw.githubusercontent.com/svomro/chatgpt-archive/main/dist/chatgpt-live-stream.user.js
@@ -1259,7 +1259,7 @@ function turnsToMarkdown(turns) {
               <path fill="currentColor" fill-rule="evenodd" d="M10 2.085a7.915 7.915 0 1 1 0 15.83 7.915 7.915 0 0 1 0-15.83m0 1.33a6.585 6.585 0 1 0 0 13.17 6.585 6.585 0 0 0 0-13.17" clip-rule="evenodd"/>
               <path class="cgls-dot" d="M10 5a5 5 0 1 1 0 10 5 5 0 0 1 0-10"/>
             </svg>
-            <span class="cgls-tooltip">Live Stream Recorder</span>
+            <span class="cgls-tooltip">idle</span>
           </button>`;
         button = root.querySelector('button');
         tooltip = root.querySelector('.cgls-tooltip');
@@ -1293,12 +1293,12 @@ function turnsToMarkdown(turns) {
         return;
       }
 
-      const parts = ['Live Stream Recorder'];
+      const parts = [];
       if (live.size) parts.push('rec ' + live.size + (ws ? ' (' + ws + ' WS)' : ''));
       if (bytes) parts.push((bytes / 1024).toFixed(1) + 'KB');
       if (turns) parts.push(turns + ' turn' + (turns === 1 ? '' : 's'));
-      tooltip.textContent = parts.join(' · ');
-      button.setAttribute('aria-label', tooltip.textContent);
+      tooltip.textContent = parts.length ? parts.join(' · ') : 'idle';
+      button.setAttribute('aria-label', 'Live Stream Recorder: ' + tooltip.textContent);
     }
 
     return { tick() { clearTimeout(timer); timer = setTimeout(render, 120); }, render };
@@ -1311,5 +1311,5 @@ function turnsToMarkdown(turns) {
   setInterval(() => hud.render(), 2000);
 
   window.__cgptArchive = api;
-  LOG('armed v0.4.2 -- fetch + WebSocket + EventSource hooked at document-start');
+  LOG('armed v0.4.3 -- fetch + WebSocket + EventSource hooked at document-start');
 })();
