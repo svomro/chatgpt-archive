@@ -10,7 +10,7 @@ const pure = src.slice(src.indexOf('*/', a) + 2, b);
 const ctx = { console, TextDecoder, TextEncoder };
 vm.createContext(ctx);
 vm.runInContext(pure, ctx, { filename: 'pure.js' });
-const P = vm.runInContext('({splitTopLevelJson,parseSseFrames,makeTurnAssembler,materializeTurn,turnsToMarkdown})', ctx);
+const P = vm.runInContext('({splitTopLevelJson,parseSseFrames,makeCapGuard,makeTurnAssembler,materializeTurn,turnsToMarkdown})', ctx);
 
 // Content assertions run against a REAL capture, which is one of your own
 // conversations. Neither the capture nor the values pulled out of it belong in a
@@ -127,6 +127,24 @@ for (const r of recs) { if (!r.raw) continue; if (r.kind === 'websocket') { twic
 const T2 = twice.list().map(P.materializeTurn).find(x => x.turn_id === E.turnId);
 ok('replaying the same stream twice does not double the answer', !!T2 && T2.final === T.final, { once: (T.final || '').length, twice: T2 && (T2.final || '').length });
 ok('the duplicate frames were counted, not silently ignored', Object.keys(twice.stats.duplicateOffsets).length > 0, twice.stats.duplicateOffsets);
+
+console.log('\n== byte cap accounting ==');
+{
+  const g = P.makeCapGuard(100);
+  ok('admits while under budget', g.admit(40) === true && g.admit(40) === true, g.used);
+  ok('refuses the chunk that would overshoot', g.admit(40) === false, { used: g.used, capped: g.capped });
+  ok('never overshoots the budget', g.used <= 100, g.used);
+  ok('counts what was dropped, not just that something was', g.droppedChunks === 1 && g.droppedBytes === 40, { chunks: g.droppedChunks, bytes: g.droppedBytes });
+  // A small chunk must NOT slip into the leftover budget after a big one was
+  // refused: that would leave a hole mid-stream, and an append-based delta
+  // stream with a hole reassembles into wrong text, not visibly missing text.
+  g.admit(1000);
+  ok('refuses even a chunk that would still fit, once capped', g.admit(7) === false, { used: g.used, dropped: g.droppedBytes });
+  ok('keeps counting every later loss', g.droppedChunks === 3 && g.droppedBytes === 1047, { chunks: g.droppedChunks, bytes: g.droppedBytes });
+  ok('capped latches on', g.capped === true, g.capped);
+  const h = P.makeCapGuard(10);
+  ok('a single oversized chunk is refused whole, not truncated', h.admit(11) === false && h.used === 0, { used: h.used, dropped: h.droppedBytes });
+}
 
 console.log('\n' + (fail === 0 ? 'ALL PASS' : 'FAILURES') + '  --  ' + pass + ' passed, ' + fail + ' failed\n');
 if (process.env.DUMP) {

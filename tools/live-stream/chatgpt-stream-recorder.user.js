@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         chatgpt-archive
 // @namespace    vesper.local
-// @version      0.3.4
+// @version      0.4.0
 // @description  Capture ChatGPT's raw model stream (fetch SSE + WebSocket second leg + EventSource) chunk-by-chunk into IndexedDB, then reassemble logical turns -- thoughts, commentary, tools, reasoning recap, final -- as a derived view over the raw bytes.
 // @author       vesper
 // @match        https://chatgpt.com/*
@@ -31,7 +31,14 @@
 
   const DB_NAME = 'chatgpt-archive';
   const DB_VERSION = 1;
-  const MAX_BYTES_PER_STREAM = 32 * 1024 * 1024; // backstop; capping is logged, never silent
+  // Last-resort guard against a runaway stream filling the origin's IndexedDB
+  // quota. Note the unit: a ChatGPT WebSocket is long-lived and multiplexes every
+  // turn in the conversation, so for that socket this is effectively a whole-
+  // session budget, not a per-answer one -- hence a number well above what any
+  // realistic session produces. Hitting it means bytes were LOST, which is a
+  // failure of this tool's one promise, so it is reported as an error by audit()
+  // and turns the badge red. Tune with __cgptArchive.setStreamCap(bytes).
+  let maxBytesPerStream = 256 * 1024 * 1024;
   const FLUSH_MS = 3000;
   const LOG = (...a) => console.debug('%c[cgpt-archive]', 'color:#10a37f', ...a);
 
@@ -179,6 +186,29 @@ function ptrResolve(root, ptr) {
 }
 
 // --- layer 2+3: envelopes, encoded items, turn reduction ---------------------
+
+// Byte budget for one stream. Pure so the accounting is testable: "some bytes
+// were dropped" is not actionable, "1432 chunks / 48 MB were dropped" is.
+function makeCapGuard(maxBytes) {
+  let used = 0, droppedChunks = 0, droppedBytes = 0, capped = false;
+  return {
+    get used() { return used; },
+    get capped() { return capped; },
+    get droppedChunks() { return droppedChunks; },
+    get droppedBytes() { return droppedBytes; },
+    // Decide BEFORE storing, so the budget is never overshot by a whole chunk.
+    // And once capped, refuse everything from then on -- letting a later small
+    // chunk squeeze into the leftover budget would punch a hole in the middle of
+    // the stream. A stream truncated at a known point is honest; one with a gap
+    // is worse than useless, because an append-based delta stream with a hole
+    // silently reassembles into wrong text rather than obviously missing text.
+    admit(n) {
+      if (capped || used + n > maxBytes) { capped = true; droppedChunks++; droppedBytes += n; return false; }
+      used += n;
+      return true;
+    },
+  };
+}
 
 function makeTurnAssembler() {
   const turns = new Map();
@@ -787,6 +817,9 @@ function turnsToMarkdown(turns) {
   let idSeq = 0;
   const live = new Map();
   const dirty = new Set();
+  // Survives the stream ending: a badge that goes back to green because the
+  // truncated socket closed would hide the loss.
+  const cappedStreams = new Set();
   const newId = () => `${Date.now().toString(36)}-${(idSeq++).toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
   // A single in-memory assembler feeds the badge. Authoritative turn data always
@@ -805,8 +838,9 @@ function turnsToMarkdown(turns) {
     const id = newId();
     const rec = Object.assign({
       id, status: 'streaming', startedAt: Date.now(), endedAt: null,
-      chunks: 0, bytes: 0, capped: false, summary: null,
+      chunks: 0, bytes: 0, capped: false, droppedChunks: 0, droppedBytes: 0, summary: null,
     }, meta);
+    const cap = makeCapGuard(maxBytesPerStream);
     const dec = new TextDecoder('utf-8');
     let seq = 0, carry = '';
 
@@ -817,8 +851,22 @@ function turnsToMarkdown(turns) {
     return {
       id, rec,
       push(bytes, dir) {
-        if (rec.bytes >= MAX_BYTES_PER_STREAM) {
-          if (!rec.capped) { rec.capped = true; LOG('stream', id, 'hit the', MAX_BYTES_PER_STREAM, 'byte cap -- further chunks dropped'); putStream(rec); }
+        if (!cap.admit(bytes.byteLength)) {
+          const first = !rec.capped;
+          rec.capped = true;
+          rec.droppedChunks = cap.droppedChunks;
+          rec.droppedBytes = cap.droppedBytes;
+          cappedStreams.add(id);
+          // Loud on the first loss, then every 1000 so a long overflow keeps
+          // showing up without drowning the console.
+          if (first || cap.droppedChunks % 1000 === 0) {
+            console.warn('%c[cgpt-archive] DATA LOST', 'color:#c00;font-weight:bold',
+              'stream', id, 'exceeded the', maxBytesPerStream, 'byte cap --',
+              cap.droppedChunks, 'chunks /', cap.droppedBytes, 'bytes dropped so far.',
+              'Raise it with __cgptArchive.setStreamCap(bytes) and re-capture.');
+          }
+          putStream(rec);
+          hud.tick();
           return;
         }
         // Persist first, interpret second -- and NEVER await the write here. For
@@ -1090,9 +1138,15 @@ function turnsToMarkdown(turns) {
           }
         }
       }
+      const allRecs = await allStreams();
       const report = {
         turns: turns.length,
-        // real problems
+        // real problems -- bytes that never reached disk are the worst of them
+        cappedStreams: allRecs.filter((s) => s.capped).map((s) => ({
+          id: s.id, kind: s.kind, bytes: s.bytes,
+          droppedChunks: s.droppedChunks || 0, droppedBytes: s.droppedBytes || 0,
+          url: String(s.url || '').slice(0, 80),
+        })),
         emptyDespiteActivity: turns.filter((t) => t.status === 'empty' && t.stream_item_count > 0)
           .map((t) => ({ turn_id: t.turn_id, items: t.stream_item_count, markers: [...new Set(t.markers.map((m) => m.marker))] })),
         completeWithoutFinal: turns.filter((t) => t.status === 'complete' && !t.final).map((t) => t.turn_id),
@@ -1112,8 +1166,8 @@ function turnsToMarkdown(turns) {
           knownUnhandledShapes: Object.fromEntries(Object.entries(asm.stats.unhandled).filter(([k]) => BENIGN_UNHANDLED.some((re) => re.test(k)))),
         },
       };
-      const bad = report.emptyDespiteActivity.length + report.completeWithoutFinal.length + report.lossyRejections.length
-        + report.parserThrew + report.parseErrors + Object.keys(report.unknownShapes).length;
+      const bad = report.cappedStreams.length + report.emptyDespiteActivity.length + report.completeWithoutFinal.length
+        + report.lossyRejections.length + report.parserThrew + report.parseErrors + Object.keys(report.unknownShapes).length;
       LOG(bad === 0 ? 'audit clean' : 'audit found ' + bad + ' suspicious item(s)', report);
       return report;
     },
@@ -1129,9 +1183,15 @@ function turnsToMarkdown(turns) {
       }
       return kill.length;
     },
+    setStreamCap(bytes) {
+      if (!Number.isFinite(bytes) || bytes <= 0) throw new RangeError('setStreamCap expects a positive byte count');
+      maxBytesPerStream = bytes;
+      LOG('per-stream cap is now', bytes, 'bytes (applies to streams started from here on)');
+      return bytes;
+    },
     live,
     liveTurns: liveAsm,
-    _pure: { splitTopLevelJson, parseWSFrames, parseSseFrames, makeTurnAssembler, materializeTurn, turnsToMarkdown, BENIGN_UNHANDLED },
+    _pure: { splitTopLevelJson, parseWSFrames, parseSseFrames, makeCapGuard, makeTurnAssembler, materializeTurn, turnsToMarkdown, BENIGN_UNHANDLED },
   };
 
   // ---------------------------------------------------------------- hud
@@ -1162,9 +1222,22 @@ function turnsToMarkdown(turns) {
     function render() {
       const e = ensure();
       if (!e) return;
-      let bytes = 0, ws = 0;
+      let bytes = 0, ws = 0, dropped = 0;
       for (const { rec } of live.values()) { bytes += rec.bytes; if (rec.kind === 'websocket') ws++; }
+      for (const { rec } of live.values()) dropped += rec.droppedBytes || 0;
       const turns = liveAsm.turns.size;
+      if (cappedStreams.size) {
+        // Losing bytes defeats the entire point of the tool, so it cannot be a
+        // subtle change of wording in a green badge.
+        e.style.background = 'rgba(200,0,0,.95)';
+        e.textContent = 'CAPPED -- ' + cappedStreams.size + ' stream' + (cappedStreams.size === 1 ? '' : 's') +
+          ' losing data' + (dropped ? ' (' + (dropped / 1048576).toFixed(1) + 'MB+)' : '');
+        e.title = 'chatgpt-archive: a stream hit the per-stream byte cap and chunks are being dropped. ' +
+          'Run __cgptArchive.audit() for detail, raise it with __cgptArchive.setStreamCap(bytes).';
+        return;
+      }
+      e.style.background = 'rgba(16,163,127,.92)';
+      e.title = 'chatgpt-archive -- click to export raw + turns + markdown';
       const parts = [];
       if (live.size) parts.push('rec ' + live.size + (ws ? ' (' + ws + ' WS)' : ''));
       if (bytes) parts.push((bytes / 1024).toFixed(1) + 'KB');
@@ -1181,5 +1254,5 @@ function turnsToMarkdown(turns) {
   setInterval(() => hud.render(), 2000);
 
   window.__cgptArchive = api;
-  LOG('armed v0.3.4 -- fetch + WebSocket + EventSource hooked at document-start');
+  LOG('armed v0.4.0 -- fetch + WebSocket + EventSource hooked at document-start');
 })();

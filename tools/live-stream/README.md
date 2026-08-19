@@ -92,6 +92,27 @@ capture, the capture wins.
   prose.
 - `source_analysis_msg_id` lives on `content`, not `metadata`.
 
+## The byte cap
+
+There is a last-resort per-stream budget (`256 MB`, `__cgptArchive.setStreamCap(bytes)`)
+so a runaway stream cannot exhaust the origin's IndexedDB quota. Mind the unit: a
+ChatGPT WebSocket is long-lived and multiplexes every turn, so for that socket the
+cap is effectively a whole-session budget.
+
+Hitting it means **bytes were lost**, which defeats the tool's one promise, so it
+is not a quiet condition:
+
+- the badge turns red and reads `CAPPED -- N streams losing data`
+- `audit()` reports `cappedStreams` as a top-level error with exact
+  `droppedChunks` / `droppedBytes`
+- the console gets a `DATA LOST` warning on the first drop and every 1000 after
+
+Once a stream is capped it refuses **everything** from then on, including chunks
+that would still fit. A stream truncated at a known point is honest; one with a
+hole in the middle is worse than useless, because an append-based delta stream
+with a gap silently reassembles into *wrong* text rather than obviously missing
+text.
+
 ## audit()
 
 Several perfectly normal conditions look alarming, so `audit()` separates them:
@@ -103,6 +124,7 @@ Several perfectly normal conditions look alarming, so `audit()` separates them:
 | `status: 'recovered'` | normal — whole answer arrived as a re-delivery |
 | `status: 'empty'`, `stream_item_count > 0` | **bug** — ran a stream, produced no message |
 | rejected final length ≠ kept final length | **bug** — a finished answer is being rewritten |
+| `cappedStreams` non-empty | **bug** — the byte cap dropped data; raise it and re-capture |
 
 Clean means the top level is empty and `unknownShapes` is `{}`.
 
