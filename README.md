@@ -24,7 +24,12 @@ pnpm lint
 pnpm build
 ```
 
-Install `dist/chatgpt-archive.user.js` in Tampermonkey. On ChatGPT, use the floating **Archive** button and choose the parent directory where the script should create `ChatGPT/`.
+`pnpm build` produces two independent Tampermonkey scripts:
+
+- `dist/chatgpt-archive.user.js` — the normal conversation/attachment archiver;
+- `dist/chatgpt-live-stream.user.js` — the live SSE/WebSocket recorder, loaded at `document-start` with `@grant none`.
+
+Install either one or both. They stay separate because the live recorder must patch the page's native `fetch`, `WebSocket`, and `EventSource` before ChatGPT starts them.
 
 ## Mobile stream recorder
 

@@ -11,7 +11,8 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node scripts/copy-live-stream.mjs",
+    "build:live-stream": "node scripts/copy-live-stream.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "lint": "eslint ."
